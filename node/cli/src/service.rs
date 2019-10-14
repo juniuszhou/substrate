@@ -20,6 +20,7 @@
 
 use std::sync::Arc;
 
+use substrate_casper;
 use babe;
 use client::{self, LongestChain};
 use grandpa::{self, FinalityProofProvider as GrandpaFinalityProofProvider};
@@ -210,6 +211,7 @@ macro_rules! new_full {
 				service.spawn_task(Box::new(grandpa::run_grandpa_voter(grandpa_config)?));
 			},
 			(_, true) => {
+				substrate_casper::start_casper();
 				grandpa::setup_disabled_grandpa(
 					service.client(),
 					&inherent_data_providers,

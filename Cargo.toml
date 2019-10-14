@@ -19,6 +19,8 @@ vergen = "3"
 
 [workspace]
 members = [
+	"core/casper",
+	"core/casper/primitives",
 	"core/authority-discovery",
 	"core/application-crypto",
 	"core/cli",

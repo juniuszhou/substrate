@@ -71,6 +71,8 @@ use impls::{CurrencyToVoteHandler, WeightMultiplierUpdateHandler, Author, Weight
 pub mod constants;
 use constants::{time::*, currency::*};
 
+pub mod casper;
+
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
@@ -447,6 +449,10 @@ parameter_types! {
 	pub const ReportLatency: BlockNumber = 1000;
 }
 
+impl casper::Trait for Runtime {
+	type Event = Event;
+}
+
 impl finality_tracker::Trait for Runtime {
 	type OnFinalizationStalled = Grandpa;
 	type WindowSize = WindowSize;
@@ -508,6 +514,7 @@ construct_runtime!(
 		ImOnline: im_online::{Module, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
 		AuthorityDiscovery: authority_discovery::{Module, Call, Config<T>},
 		Offences: offences::{Module, Call, Storage, Event},
+		Casper: casper::{Module, Call, Storage, Event<T>},
 	}
 );
 

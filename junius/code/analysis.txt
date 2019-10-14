@@ -1,0 +1,24 @@
+## core
+
+
+
+
+#### client
+give the whole substrate service to access db, data in chain and executor.
+
+
+#### consensus
+different optional consensus algorithm can be chosen for your chain.
+aura just rotation according to validator position in list.
+babe random verifiable function to generate and prove which one is block producer.
+rhd pbft implementation in substrate.
+
+
+#### executor
+both native and wasm execution environment to run code in external data.
+
+
+
+#### finality grandpa.
+
+

@@ -22,6 +22,7 @@ node-runtime = { path = "../runtime" }
 node-rpc = { path = "../rpc" }
 node-primitives = { path = "../primitives" }
 hex-literal = "0.2"
+substrate-casper = { package = "substrate-casper", path = "../../core/casper" }
 substrate-rpc = { package = "substrate-rpc", path = "../../core/rpc" }
 substrate-basic-authorship = { path = "../../core/basic-authorship" }
 substrate-service = { path = "../../core/service" }

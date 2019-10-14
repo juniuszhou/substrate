@@ -1,0 +1,11 @@
+## overlay the data exist in memory or rocksdb.
+
+## ext execution environment with externalities.
+
+## InherentData data in block header, not include externalities
+
+## externalities data in block, exclude the header. data like transactions.
+
+## session the duration when select authorities again.
+
+##
