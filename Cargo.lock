@@ -2494,6 +2494,7 @@ dependencies = [
  "srml-timestamp 2.0.0",
  "srml-treasury 2.0.0",
  "substrate-authority-discovery-primitives 2.0.0",
+ "substrate-casper-primitives 2.0.0",
  "substrate-client 2.0.0",
  "substrate-consensus-babe-primitives 2.0.0",
  "substrate-keyring 2.0.0",
@@ -4608,7 +4609,9 @@ version = "2.0.0"
 dependencies = [
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures-timer 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sr-primitives 2.0.0",
  "substrate-casper-primitives 2.0.0",
+ "substrate-client 2.0.0",
 ]
 
 [[package]]

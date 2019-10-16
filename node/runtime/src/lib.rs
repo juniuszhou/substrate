@@ -451,6 +451,7 @@ parameter_types! {
 
 impl casper::Trait for Runtime {
 	type Event = Event;
+	type Currency = Balances;
 }
 
 impl finality_tracker::Trait for Runtime {
@@ -548,6 +549,12 @@ pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExt
 pub type Executive = executive::Executive<Runtime, Block, system::ChainContext<Runtime>, Runtime, AllModules>;
 
 impl_runtime_apis! {
+	impl substrate_casper_primitives::CasperApi<Block> for Runtime {
+		fn finalized_epoch() {
+
+		}
+	}
+
 	impl client_api::Core<Block> for Runtime {
 		fn version() -> RuntimeVersion {
 			VERSION

@@ -188,6 +188,8 @@ macro_rules! new_full {
 			keystore: Some(service.keystore()),
 		};
 
+		let casper_engine = substrate_casper::CasperEngine::new(service.client());
+
 		match (is_authority, disable_grandpa) {
 			(false, false) => {
 				// start the lightweight GRANDPA observer

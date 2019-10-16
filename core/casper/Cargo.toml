@@ -8,4 +8,5 @@ edition = "2018"
 futures = "0.1"
 futures-timer = "0.1"
 substrate-casper-primitives = { package = "substrate-casper-primitives", path = "primitives" }
-
+client = { package = "substrate-client", path = "../client" }
+sr-primitives = {  path = "../sr-primitives" }

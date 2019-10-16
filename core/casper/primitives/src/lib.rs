@@ -27,6 +27,6 @@ decl_runtime_apis! {
 		/// Starts the off-chain task for given block number.
 		#[skip_initialize_block]
 		fn finalized_epoch();
-		fn finalized_hash(number: NumberFor<Block>);
+		// fn finalized_hash(number: NumberFor<Block>);
 	}
 }
