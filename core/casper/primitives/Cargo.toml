@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 client = { package = "substrate-client", path = "../../client", default-features = false }
 sr-primitives = {  path = "../../sr-primitives", default-features = false }
+node-primitives = { path = "../../../node/primitives" }
 
 [features]
 default = ["std"]

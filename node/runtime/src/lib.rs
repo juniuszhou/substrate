@@ -550,8 +550,13 @@ pub type Executive = executive::Executive<Runtime, Block, system::ChainContext<R
 
 impl_runtime_apis! {
 	impl substrate_casper_primitives::CasperApi<Block> for Runtime {
-		fn finalized_epoch() {
+		fn finalized_epoch() -> u32 {
+				Casper::last_finalized_epoch()
+		}
 
+		fn finalized_hash(n: u32) -> Option<Hash> {
+				// Casper::finalized_hash(Casper::last_finalized_epoch())
+				Casper::finalized_hash(n)
 		}
 	}
 

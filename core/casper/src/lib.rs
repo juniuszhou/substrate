@@ -5,19 +5,51 @@ use std::time::{Instant, Duration};
 use std::sync::Arc;
 use futures::prelude::*;
 use futures_timer::Delay;
-use substrate_casper_primitives::CasperApi;
-use sr_primitives::traits::{NumberFor, Block as BlockT};
-use client::{Self, Client};
+use substrate_casper_primitives::*;
+use sr_primitives::traits::{NumberFor, Block as BlockT, ProvideRuntimeApi};
+use sr_primitives::{generic::{BlockId}};
+use client::{
+	block_builder::api::BlockBuilder as BlockBuilderApi,
+	blockchain::{self, HeaderBackend, ProvideCache}, BlockchainEvents, CallExecutor, Client,
+	runtime_api::ApiExt, error::Result as ClientResult, backend::{AuxStore, Backend},
+	ProvideUncles,
+	utils::is_descendent_of,
+};
 
-pub struct CasperEngine<B, E, Block: BlockT, RA> {
-	pub inner: Arc<Client<B, E, Block, RA>>,
+mod casper_slots;
+
+/// Extract current epoch from runtime.
+fn finalized_epoch_from_runtime<B, C>(client: &C, at: &BlockId<B>) -> Option<u32> where
+	B: BlockT,
+	C: ProvideRuntimeApi,
+	C::Api: CasperApi<B>,
+{
+	if client.runtime_api().has_api::<dyn CasperApi<B>>(at).unwrap_or(false) {
+		let s = CasperApi::finalized_epoch(&*client.runtime_api(), at).ok()?;
+			Some(s)	
+	} else {
+		None
+	}
 }
 
-impl<B, E, Block: BlockT, RA> CasperEngine<B, E, Block, RA> {
-	pub fn new(client: Arc<Client<B, E, Block, RA>>) -> Self {
+pub struct CasperEngine<C> {
+	pub client: Arc<C>,
+}
+
+impl<C> CasperEngine<C> {
+	pub fn new(client: Arc<C>) -> Self {
 		CasperEngine {
-			inner: client,
+			client,
 		}
+	}
+
+	pub fn try_method(&self) {
+		// finalized_epoch_from_runtime(&*self.inner, BlockId::default())
+		// CasperApi::finalized_epoch(&*self.inner.runtime_api(), at);
+
+		// if &self.inner.runtime_api().has_api::<dyn CasperApi<B>>(at).unwrap_or(false) {
+		// 	finalized_epoch_from_runtime(&self.inner, BlockId::default())
+		// }
 	}
 
 	// fn apply_finality(hash: Block::Hash, number: NumberFor<Block>) {
@@ -103,22 +135,16 @@ impl<B, E, Block: BlockT, RA> CasperEngine<B, E, Block, RA> {
 	// }
 }
 
-fn smoke() {
-	println!("in smoke");
-	let dur = Duration::from_millis(10000);
-	let start = Instant::now();
-	let timeout = Delay::new(dur);
-	timeout.wait().unwrap();
-}
-
 
 pub fn start_casper() {
 	println!("start");
-	std::thread::spawn(|| {
-		loop {
-			smoke();
-		}
+	let slots = casper_slots::CasperSlots::new(30000);
+	let f = slots.for_each(|slot_number| {
+        println!("Casper current slot is {:?}", slot_number);
+		futures::future::ok(())
 	});
+
+	tokio::run(f);
 	println!("over");
 }
 

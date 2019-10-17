@@ -19,14 +19,11 @@
 
 use client::decl_runtime_apis;
 use sr_primitives::traits::NumberFor;
+use node_primitives::Hash;
 
 decl_runtime_apis! {
-	/// The offchain worker api.
-	#[api_version(2)]
 	pub trait CasperApi {
-		/// Starts the off-chain task for given block number.
-		#[skip_initialize_block]
-		fn finalized_epoch();
-		// fn finalized_hash(number: NumberFor<Block>);
+	    fn finalized_epoch() -> u32;
+		fn finalized_hash(n: u32) -> Option<Hash>;
 	}
 }

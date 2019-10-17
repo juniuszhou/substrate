@@ -1,0 +1,550 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="RUST_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/state-machine/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/state-machine/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/state-machine/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/state-machine/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/application-crypto/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/application-crypto/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/application-crypto/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/application-crypto/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/babe/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/babe/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/babe/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/babe/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/service/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/service/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/service/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/service/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/grandpa/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/grandpa/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/grandpa/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/grandpa/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/timestamp/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/timestamp/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/timestamp/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/timestamp/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/finality-grandpa/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/finality-grandpa/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/finality-grandpa/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/finality-grandpa/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/aura/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/aura/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/aura/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/aura/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/slots/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/slots/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/slots/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/slots/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/utils/wasm-builder/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/utils/wasm-builder/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/utils/wasm-builder/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/utils/wasm-builder/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/basic-authorship/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/basic-authorship/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/basic-authorship/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/basic-authorship/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/wasm-interface/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/wasm-interface/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/wasm-interface/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/wasm-interface/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/cli/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/cli/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/cli/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/cli/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/utils/wasm-builder-runner/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/utils/wasm-builder-runner/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/utils/wasm-builder-runner/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/utils/wasm-builder-runner/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/panic-handler/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/panic-handler/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/panic-handler/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/panic-handler/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/procedural/tools/derive/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/procedural/tools/derive/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/procedural/tools/derive/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/procedural/tools/derive/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/transaction-pool/graph/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/transaction-pool/graph/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/transaction-pool/graph/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/transaction-pool/graph/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-api-macros/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-api-macros/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-api-macros/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-api-macros/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/finality-grandpa/primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/finality-grandpa/primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/finality-grandpa/primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/finality-grandpa/primitives/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/finality-tracker/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/finality-tracker/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/finality-tracker/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/finality-tracker/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/executor/runtime-test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/executor/runtime-test/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/executor/runtime-test/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/executor/runtime-test/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/casper/primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/casper/primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/casper/primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/casper/primitives/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/collective/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/collective/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/collective/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/collective/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/subkey/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/subkey/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/subkey/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/subkey/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/pow/primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/pow/primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/pow/primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/pow/primitives/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/democracy/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/democracy/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/democracy/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/democracy/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/executive/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/executive/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/executive/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/executive/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/authority-discovery/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/authority-discovery/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/authority-discovery/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/authority-discovery/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/procedural/tools/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/procedural/tools/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/procedural/tools/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/procedural/tools/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/membership/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/membership/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/membership/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/membership/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/serializer/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/serializer/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/serializer/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/serializer/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-version/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-version/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-version/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-version/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/keyring/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/keyring/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/keyring/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/keyring/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/network/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/network/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/network/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/network/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/primitives/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/test-client/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/test-client/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/test-client/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/test-client/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/testing/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/testing/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/testing/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/testing/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/im-online/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/im-online/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/im-online/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/im-online/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/indices/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/indices/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/indices/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/indices/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/session/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/session/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/session/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/session/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/babe/primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/babe/primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/babe/primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/babe/primitives/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/generic-asset/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/generic-asset/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/generic-asset/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/generic-asset/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/client/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/client/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/client/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/client/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-std/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-std/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-std/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-std/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/phragmen/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/phragmen/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/phragmen/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/phragmen/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/uncles/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/uncles/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/uncles/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/uncles/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-staking-primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-staking-primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-staking-primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-staking-primitives/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-io/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-io/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-io/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-io/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/offchain/primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/offchain/primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/offchain/primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/offchain/primitives/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/procedural/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/procedural/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/procedural/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/procedural/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/staking/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/staking/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/staking/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/staking/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc/primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc/primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc/primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc/primitives/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/transaction-pool/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/transaction-pool/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/transaction-pool/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/transaction-pool/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/test/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/test/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/test/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/peerset/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/peerset/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/peerset/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/peerset/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/utils/fork-tree/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/utils/fork-tree/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/utils/fork-tree/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/utils/fork-tree/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc-servers/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc-servers/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc-servers/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc-servers/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/telemetry/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/telemetry/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/telemetry/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/telemetry/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/inherents/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/inherents/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/inherents/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/inherents/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/support/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/system/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/system/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/system/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/system/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/pow/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/pow/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/pow/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/pow/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/example/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/example/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/example/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/example/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/test-runtime/client/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/test-runtime/client/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/test-runtime/client/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/test-runtime/client/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/sudo/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/sudo/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/sudo/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/sudo/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/aura/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/aura/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/aura/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/aura/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/executor/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/executor/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/executor/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/executor/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/trie/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/trie/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/trie/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/trie/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/elections/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/elections/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/elections/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/elections/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node-template/runtime/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node-template/runtime/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node-template/runtime/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node-template/runtime/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/offences/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/offences/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/offences/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/offences/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/contracts/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/contracts/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/contracts/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/contracts/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/rpc/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/rpc/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/rpc/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/rpc/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/scored-pool/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/scored-pool/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/scored-pool/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/scored-pool/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-sandbox/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-sandbox/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-sandbox/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-sandbox/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/client/db/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/client/db/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/client/db/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/client/db/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test-utils/transaction-factory/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test-utils/transaction-factory/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test-utils/transaction-factory/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test-utils/transaction-factory/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc/api/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc/api/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc/api/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/rpc/api/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/treasury/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/treasury/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/treasury/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/treasury/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/session/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/session/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/session/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/session/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/staking/reward-curve/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/staking/reward-curve/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/staking/reward-curve/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/staking/reward-curve/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/assets/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/assets/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/assets/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/assets/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/authority-discovery/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/authority-discovery/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/authority-discovery/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/authority-discovery/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/test-runtime/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/test-runtime/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/test-runtime/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/test-runtime/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/cli/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/cli/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/cli/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/cli/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/casper/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/casper/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/casper/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/casper/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/babe/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/babe/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/babe/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/babe/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/elections-phragmen/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/elections-phragmen/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/elections-phragmen/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/elections-phragmen/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test-utils/chain-spec-builder/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test-utils/chain-spec-builder/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/test-utils/chain-spec-builder/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/test-utils/chain-spec-builder/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/service/test/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/service/test/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/service/test/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/service/test/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/executor/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/executor/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/executor/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/executor/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node-template/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node-template/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node-template/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node-template/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/sr-primitives/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/authority-discovery/primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/authority-discovery/primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/authority-discovery/primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/authority-discovery/primitives/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/authorship/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/authorship/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/authorship/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/authorship/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/state-db/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/state-db/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/state-db/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/state-db/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/rhd/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/rhd/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/rhd/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/rhd/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/balances/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/balances/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/balances/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/balances/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/aura/primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/aura/primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/aura/primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/aura/primitives/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/runtime/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/runtime/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/runtime/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/runtime/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/rpc-client/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/rpc-client/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/node/rpc-client/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/node/rpc-client/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/keystore/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/keystore/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/keystore/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/keystore/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/offchain/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/offchain/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/offchain/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/offchain/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/metadata/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/metadata/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/metadata/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/srml/metadata/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/common/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/common/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/common/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/consensus/common/benches" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/primitives/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/primitives/examples" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/core/primitives/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/core/primitives/benches" isTestSource="true" />
+      <excludeFolder url="file://$MODULE_DIR$/core/application-crypto/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/authority-discovery/primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/authority-discovery/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/basic-authorship/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/casper/primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/casper/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/cli/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/client/db/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/client/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/consensus/aura/primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/consensus/aura/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/consensus/babe/primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/consensus/babe/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/consensus/common/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/consensus/pow/primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/consensus/pow/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/consensus/rhd/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/consensus/slots/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/consensus/uncles/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/executor/runtime-test/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/executor/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/finality-grandpa/primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/finality-grandpa/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/inherents/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/keyring/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/keystore/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/network/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/offchain/primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/offchain/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/panic-handler/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/peerset/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/phragmen/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/rpc-servers/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/rpc/api/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/rpc/primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/rpc/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/serializer/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/service/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/service/test/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/session/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/sr-api-macros/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/sr-io/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/sr-primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/sr-sandbox/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/sr-staking-primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/sr-std/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/sr-version/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/state-db/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/state-machine/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/telemetry/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/test-client/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/test-runtime/client/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/test-runtime/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/transaction-pool/graph/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/transaction-pool/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/trie/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/utils/fork-tree/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/utils/wasm-builder-runner/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/utils/wasm-builder/target" />
+      <excludeFolder url="file://$MODULE_DIR$/core/wasm-interface/target" />
+      <excludeFolder url="file://$MODULE_DIR$/node-template/runtime/target" />
+      <excludeFolder url="file://$MODULE_DIR$/node-template/target" />
+      <excludeFolder url="file://$MODULE_DIR$/node/cli/target" />
+      <excludeFolder url="file://$MODULE_DIR$/node/executor/target" />
+      <excludeFolder url="file://$MODULE_DIR$/node/primitives/target" />
+      <excludeFolder url="file://$MODULE_DIR$/node/rpc-client/target" />
+      <excludeFolder url="file://$MODULE_DIR$/node/rpc/target" />
+      <excludeFolder url="file://$MODULE_DIR$/node/runtime/target" />
+      <excludeFolder url="file://$MODULE_DIR$/node/testing/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/assets/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/aura/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/authority-discovery/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/authorship/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/babe/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/balances/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/collective/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/contracts/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/democracy/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/elections-phragmen/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/elections/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/example/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/executive/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/finality-tracker/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/generic-asset/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/grandpa/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/im-online/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/indices/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/membership/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/metadata/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/offences/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/scored-pool/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/session/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/staking/reward-curve/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/staking/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/sudo/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/support/procedural/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/support/procedural/tools/derive/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/support/procedural/tools/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/support/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/support/test/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/system/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/timestamp/target" />
+      <excludeFolder url="file://$MODULE_DIR$/srml/treasury/target" />
+      <excludeFolder url="file://$MODULE_DIR$/subkey/target" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test-utils/chain-spec-builder/target" />
+      <excludeFolder url="file://$MODULE_DIR$/test-utils/transaction-factory/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
