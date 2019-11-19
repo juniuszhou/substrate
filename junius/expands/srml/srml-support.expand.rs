@@ -1,0 +1,6653 @@
+#![feature(prelude_import)]
+#![no_std]
+// Copyright 2017-2019 Parity Technologies (UK) Ltd.
+// This file is part of Substrate.
+
+// Substrate is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Substrate is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
+
+//! Support code for the runtime.
+#[prelude_import]
+use ::std::prelude::v1::*;
+#[macro_use]
+extern crate std as std;
+
+
+#[macro_use]
+extern crate bitmask;
+
+#[cfg(feature = "std")]
+pub use serde;
+#[doc(hidden)]
+pub use sr_std as rstd;
+#[doc(hidden)]
+pub use codec;
+#[cfg(feature = "std")]
+#[doc(hidden)]
+pub use once_cell;
+#[doc(hidden)]
+pub use paste;
+pub use sr_primitives as runtime_primitives;
+
+pub use self::storage::hashed::generator::{HashedStorage, Twox256, Twox128,
+                                           Blake2_256, Blake2_128,
+                                           Twox64Concat};
+pub use self::storage::unhashed::generator::UnhashedStorage;
+
+#[macro_use]
+pub mod dispatch {
+
+
+
+
+
+
+
+
+
+
+
+    // Oh rust, you crack me up...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // initialized during genesis
+
+    // get / insert / take
+
+    // mutate
+
+    // remove
+
+    // insert / remove
+
+    // Add couple of more elements
+
+    // mutate
+
+    // remove first
+
+    // remove last from the list
+
+    // remove the last element
+
+    // initialized during genesis
+
+    // get / insert / take
+
+    // mutate
+
+    // remove
+
+    // remove prefix
+
+
+
+
+
+
+    //! Dispatch system. Contains a macro for defining runtime modules and
+    //! generating values representing lazy module function calls.
+    pub use crate::rstd::prelude::{Vec, Clone, Eq, PartialEq};
+    #[cfg(feature = "std")]
+    pub use std::fmt;
+    pub use crate::rstd::result;
+    pub use crate::codec::{Codec, Decode, Encode, Input, Output, HasCompact,
+                           EncodeAsRef};
+    pub use srml_metadata::{FunctionMetadata, DecodeDifferent,
+                            DecodeDifferentArray, FunctionArgumentMetadata};
+    /// A type that cannot be instantiated.
+    pub enum Never { }
+    /// Result of a module function call; either nothing (functions are only called for "side effects")
+    /// or an error message.
+    pub type Result = result::Result<(), &'static str>;
+    /// A lazy call (module function and argument values) that can be executed via its `dispatch`
+    /// method.
+    pub trait Dispatchable {
+        /// Every function call from your runtime has an origin, which specifies where the extrinsic was
+        /// generated from. In the case of a signed extrinsic (transaction), the origin contains an
+        /// identifier for the caller. The origin can be empty in the case of an inherent extrinsic.
+        type
+        Origin;
+        type
+        Trait;
+        fn dispatch(self, origin: Self::Origin)
+        -> Result;
+    }
+    /// Serializable version of Dispatchable.
+    /// This value can be used as a "function" in an extrinsic.
+    pub trait Callable {
+        type
+        Call: Dispatchable +
+        Codec +
+        Clone +
+        PartialEq +
+        Eq;
+    }
+    pub type CallableCallFor<A> = <A as Callable>::Call;
+    #[cfg(feature = "std")]
+    pub trait Parameter: Codec + Clone + Eq + fmt::Debug { }
+    #[cfg(feature = "std")]
+    impl <T> Parameter for T where T: Codec + Clone + Eq + fmt::Debug { }
+    /// Declares a `Module` struct and a `Call` enum, which implements the dispatch logic.
+    ///
+    /// ## Declaration
+    ///
+    /// ```
+    /// # #[macro_use]
+    /// # extern crate srml_support;
+    /// # use srml_support::dispatch::Result;
+    /// # use srml_system::{self as system, Trait, ensure_signed};
+    /// decl_module! {
+    /// 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    ///
+    /// 		// Private functions are dispatchable, but not available to other
+    /// 		// SRML modules.
+    /// 		fn my_function(origin, var: u64) -> Result {
+    ///				// Your implementation
+    ///				Ok(())
+    /// 		}
+    ///
+    ///			// Public functions are both dispatchable and available to other
+    /// 		// SRML modules.
+    ///			pub fn my_public_function(origin) -> Result {
+    /// 			// Your implementation
+    ///				Ok(())
+    /// 		}
+    ///		}
+    /// }
+    /// # fn main() {}
+    /// ```
+    ///
+    /// The declaration is set with the header where:
+    ///
+    /// * `Module`: The struct generated by the macro, with type `Trait`.
+    /// * `Call`: The enum generated for every module, which implements [`Callable`](./dispatch/trait.Callable.html).
+    /// * `origin`: Alias of `T::Origin`, declared by the [`impl_outer_origin!`](./macro.impl_outer_origin.html) macro.
+    /// * `Result`: The expected return type from module functions.
+    ///
+    /// ### Shorthand Example
+    ///
+    /// The macro automatically expands a shorthand function declaration to return the `Result` type.
+    /// These functions are the same:
+    ///
+    /// ```
+    /// # #[macro_use]
+    /// # extern crate srml_support;
+    /// # use srml_support::dispatch::Result;
+    /// # use srml_system::{self as system, Trait, ensure_signed};
+    /// decl_module! {
+    /// 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    ///
+    /// 		fn my_long_function(origin) -> Result {
+    ///				// Your implementation
+    /// 			Ok(())
+    /// 		}
+    ///
+    /// 		fn my_short_function(origin) {
+    ///				// Your implementation
+    /// 		}
+    ///		}
+    /// }
+    /// # fn main() {}
+    /// ```
+    ///
+    /// ### Privileged Function Example
+    ///
+    /// If the `origin` param is omitted, the macro adds it as the first parameter and adds `ensure_root(origin)`
+    /// as the first line of the function. These functions are the same:
+    ///
+    /// ```
+    /// # #[macro_use]
+    /// # extern crate srml_support;
+    /// # use srml_support::dispatch::Result;
+    /// # use srml_system::{self as system, Trait, ensure_signed, ensure_root};
+    /// decl_module! {
+    /// 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    ///
+    ///			fn my_privileged_function() -> Result {
+    ///				// Your implementation
+    /// 			Ok(())
+    /// 		}
+    ///
+    ///			fn my_function(origin) -> Result {
+    /// 			ensure_root(origin);
+    ///				// Your implementation
+    /// 			Ok(())
+    /// 		}
+    ///		}
+    /// }
+    /// # fn main() {}
+    /// ```
+    ///
+    /// ## Multiple Module Instances Example
+    ///
+    /// A Substrate module can be built such that multiple instances of the same module can be used within a single
+    /// runtime. For example, the [Balances module](../srml_balances/index.html) can be added multiple times to your
+    /// runtime in order to support multiple, independent currencies for your blockchain. Here is an example of how
+    /// you would declare such a module using the `decl_module!` macro:
+    ///
+    /// ```
+    /// # #[macro_use]
+    /// # extern crate srml_support;
+    /// # use srml_support::dispatch::Result;
+    /// # use srml_system::{self as system, ensure_signed};
+    /// # pub struct DefaultInstance;
+    /// # pub trait Instance {}
+    /// # impl Instance for DefaultInstance {}
+    /// pub trait Trait<I: Instance=DefaultInstance>: system::Trait {}
+    ///
+    /// decl_module! {
+    /// 	pub struct Module<T: Trait<I>, I: Instance = DefaultInstance> for enum Call where origin: T::Origin {
+    /// 		// Your implementation
+    /// 	}
+    /// }
+    /// # fn main() {}
+    /// ```
+    ///
+    /// ## Reserved Functions
+    ///
+    /// The following are reserved function signatures:
+    ///
+    /// * `deposit_event`: Helper function for depositing an [event](https://docs.substrate.dev/docs/event-enum).
+    /// The default behavior is to call `deposit_event` from the [System module](../srml_system/index.html).
+    /// However, you can write your own implementation for events in your runtime. To use the default behavior,
+    /// add `fn deposit_event<T>() = default;` to your `Module`.
+    ///
+    /// The following reserved functions also take the block number (with type `T::BlockNumber`) as an optional input:
+    ///
+    /// * `on_initialize`: Executes at the beginning of a block. Using this function will
+    /// implement the [`OnInitialize`](../sr_primitives/traits/trait.OnInitialize.html) trait.
+    /// * `on_finalize`: Executes at the end of a block. Using this function will
+    /// implement the [`OnFinalize`](../sr_primitives/traits/trait.OnFinalize.html) trait.
+    /// * `offchain_worker`: Executes at the beginning of a block and produces extrinsics for a future block
+    /// upon completion. Using this function will implement the
+    /// [`OffchainWorker`](../sr_primitives/traits/trait.OffchainWorker.html) trait.
+    #[macro_export]
+    macro_rules! decl_module((
+                             $ ( # [ $ attr : meta ] ) * pub struct $ mod_type
+                             : ident < $ trait_instance : ident : $ trait_name
+                             : ident $ (
+                             < I > , I : $ instantiable : path $ (
+                             = $ module_default_instance : path ) ? ) ? > for
+                             enum $ call_type : ident where origin : $
+                             origin_type : ty { $ ( $ t : tt ) * } ) => {
+                             $ crate :: decl_module ! (
+                             @ normalize $ ( # [ $ attr ] ) * pub struct $
+                             mod_type < $ trait_instance : $ trait_name $ (
+                             < I > , I : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > for enum $
+                             call_type where origin : $ origin_type , system =
+                             system {  } {  } {  } {  } [  ] $ ( $ t ) * ) ; }
+                             ; (
+                             $ ( # [ $ attr : meta ] ) * pub struct $ mod_type
+                             : ident < $ trait_instance : ident : $ trait_name
+                             : ident $ (
+                             < I > , I : $ instantiable : path $ (
+                             = $ module_default_instance : path ) ? ) ? > for
+                             enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {
+                             $ ( $ t : tt ) * } ) => {
+                             $ crate :: decl_module ! (
+                             @ normalize $ ( # [ $ attr ] ) * pub struct $
+                             mod_type < $ trait_instance : $ trait_name $ (
+                             < I > , I : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > for enum $
+                             call_type where origin : $ origin_type , system =
+                             $ system {  } {  } {  } {  } [  ] $ ( $ t ) * ) ;
+                             } ; (
+                             @ normalize $ ( # [ $ attr : meta ] ) * pub
+                             struct $ mod_type : ident < $ trait_instance :
+                             ident : $ trait_name : ident $ (
+                             < I > , I : $ instantiable : path $ (
+                             = $ module_default_instance : path ) ? ) ? > for
+                             enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {  }
+                             { $ ( $ on_initialize : tt ) * } {
+                             $ ( $ on_finalize : tt ) * } {
+                             $ ( $ offchain : tt ) * } [ $ ( $ t : tt ) * ] $
+                             ( # [ doc = $ doc_attr : tt ] ) * $ vis : vis fn
+                             deposit_event $ (
+                             < $ dpeg : ident $ ( , $ dpeg_instance : ident )
+                             ? > ) * (  ) = default ; $ ( $ rest : tt ) * ) =>
+                             {
+                             $ crate :: decl_module ! (
+                             @ normalize $ ( # [ $ attr ] ) * pub struct $
+                             mod_type < $ trait_instance : $ trait_name $ (
+                             < I > , I : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > for enum $
+                             call_type where origin : $ origin_type , system =
+                             $ system {
+                             $ vis fn deposit_event $ (
+                             < $ dpeg $ ( , $ dpeg_instance ) ? > ) * (  ) =
+                             default ; } { $ ( $ on_initialize ) * } {
+                             $ ( $ on_finalize ) * } { $ ( $ offchain ) * } [
+                             $ ( $ t ) * ] $ ( $ rest ) * ) ; } ; (
+                             @ normalize $ ( # [ $ attr : meta ] ) * pub
+                             struct $ mod_type : ident < $ trait_instance :
+                             ident : $ trait_name : ident $ (
+                             < I > , I : $ instantiable : path $ (
+                             = $ module_default_instance : path ) ? ) ? > for
+                             enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {  }
+                             { $ ( $ on_initialize : tt ) * } {
+                             $ ( $ on_finalize : tt ) * } {
+                             $ ( $ offchain : tt ) * } [ $ ( $ t : tt ) * ] $
+                             ( # [ doc = $ doc_attr : tt ] ) * $ vis : vis fn
+                             deposit_event $ (
+                             < $ dpeg : ident $ ( , $ dpeg_instance : ident )
+                             ? > ) * (
+                             $ ( $ param_name : ident : $ param : ty ) , * ) {
+                             $ ( $ impl : tt ) * } $ ( $ rest : tt ) * ) => {
+                             $ crate :: decl_module ! (
+                             @ normalize $ ( # [ $ attr ] ) * pub struct $
+                             mod_type < $ trait_instance : $ trait_name $ (
+                             < I > , I : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > for enum $
+                             call_type where origin : $ origin_type , system =
+                             $ system {
+                             $ vis fn deposit_event $ (
+                             < $ dpeg $ ( , $ dpeg_instance ) ? > ) * (
+                             $ ( $ param_name : $ param ) , * ) {
+                             $ ( $ impl ) * } } { $ ( $ on_initialize ) * } {
+                             $ ( $ on_finalize ) * } { $ ( $ offchain ) * } [
+                             $ ( $ t ) * ] $ ( $ rest ) * ) ; } ; (
+                             @ normalize $ ( # [ $ attr : meta ] ) * pub
+                             struct $ mod_type : ident < $ trait_instance :
+                             ident : $ trait_name : ident $ (
+                             < I > , I : $ instantiable : path $ (
+                             = $ module_default_instance : path ) ? ) ? > for
+                             enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {
+                             $ ( $ deposit_event : tt ) * } {
+                             $ ( $ on_initialize : tt ) * } {  } {
+                             $ ( $ offchain : tt ) * } [ $ ( $ t : tt ) * ] $
+                             ( # [ doc = $ doc_attr : tt ] ) * fn on_finalize
+                             ( $ ( $ param_name : ident : $ param : ty ) , * )
+                             { $ ( $ impl : tt ) * } $ ( $ rest : tt ) * ) =>
+                             {
+                             $ crate :: decl_module ! (
+                             @ normalize $ ( # [ $ attr ] ) * pub struct $
+                             mod_type < $ trait_instance : $ trait_name $ (
+                             < I > , I : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > for enum $
+                             call_type where origin : $ origin_type , system =
+                             $ system { $ ( $ deposit_event ) * } {
+                             $ ( $ on_initialize ) * } {
+                             fn on_finalize ( $ ( $ param_name : $ param ) , *
+                             ) { $ ( $ impl ) * } } { $ ( $ offchain ) * } [
+                             $ ( $ t ) * ] $ ( $ rest ) * ) ; } ; (
+                             @ normalize $ ( # [ $ attr : meta ] ) * pub
+                             struct $ mod_type : ident < $ trait_instance :
+                             ident : $ trait_name : ident $ (
+                             < I > , I : $ instantiable : path $ (
+                             = $ module_default_instance : path ) ? ) ? > for
+                             enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {
+                             $ ( $ deposit_event : tt ) * } {
+                             $ ( $ on_initialize : tt ) * } {  } {
+                             $ ( $ offchain : tt ) * } [ $ ( $ t : tt ) * ] $
+                             ( # [ doc = $ doc_attr : tt ] ) * fn on_finalise
+                             ( $ ( $ param_name : ident : $ param : ty ) , * )
+                             { $ ( $ impl : tt ) * } $ ( $ rest : tt ) * ) =>
+                             {
+                             compile_error ! (
+                             "`on_finalise` was renamed to `on_finalize`. Please rename your function accordingly."
+                             ) ; } ; (
+                             @ normalize $ ( # [ $ attr : meta ] ) * pub
+                             struct $ mod_type : ident < $ trait_instance :
+                             ident : $ trait_name : ident $ (
+                             < I > , I : $ instantiable : path $ (
+                             = $ module_default_instance : path ) ? ) ? > for
+                             enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {
+                             $ ( $ deposit_event : tt ) * } {  } {
+                             $ ( $ on_finalize : tt ) * } {
+                             $ ( $ offchain : tt ) * } [ $ ( $ t : tt ) * ] $
+                             ( # [ doc = $ doc_attr : tt ] ) * fn
+                             on_initialize (
+                             $ ( $ param_name : ident : $ param : ty ) , * ) {
+                             $ ( $ impl : tt ) * } $ ( $ rest : tt ) * ) => {
+                             $ crate :: decl_module ! (
+                             @ normalize $ ( # [ $ attr ] ) * pub struct $
+                             mod_type < $ trait_instance : $ trait_name $ (
+                             < I > , I : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > for enum $
+                             call_type where origin : $ origin_type , system =
+                             $ system { $ ( $ deposit_event ) * } {
+                             fn on_initialize (
+                             $ ( $ param_name : $ param ) , * ) {
+                             $ ( $ impl ) * } } { $ ( $ on_finalize ) * } {
+                             $ ( $ offchain ) * } [ $ ( $ t ) * ] $ ( $ rest )
+                             * ) ; } ; (
+                             @ normalize $ ( # [ $ attr : meta ] ) * pub
+                             struct $ mod_type : ident < $ trait_instance :
+                             ident : $ trait_name : ident $ (
+                             < I > , I : $ instantiable : path $ (
+                             = $ module_default_instance : path ) ? ) ? > for
+                             enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {
+                             $ ( $ deposit_event : tt ) * } {  } {
+                             $ ( $ on_finalize : tt ) * } {
+                             $ ( $ offchain : tt ) * } [ $ ( $ t : tt ) * ] $
+                             ( # [ doc = $ doc_attr : tt ] ) * fn
+                             on_initialise (
+                             $ ( $ param_name : ident : $ param : ty ) , * ) {
+                             $ ( $ impl : tt ) * } $ ( $ rest : tt ) * ) => {
+                             compile_error ! (
+                             "`on_initialise` was renamed to `on_initialize`. Please rename your function accordingly."
+                             ) ; } ; (
+                             @ normalize $ ( # [ $ attr : meta ] ) * pub
+                             struct $ mod_type : ident < $ trait_instance :
+                             ident : $ trait_name : ident > for enum $
+                             call_type : ident where origin : $ origin_type :
+                             ty , system = $ system : ident {
+                             $ ( $ deposit_event : tt ) * } {
+                             $ ( $ on_initialize : tt ) * } {
+                             $ ( $ on_finalize : tt ) * } {  } [
+                             $ ( $ t : tt ) * ] $ (
+                             # [ doc = $ doc_attr : tt ] ) * fn
+                             offchain_worker (
+                             $ ( $ param_name : ident : $ param : ty ) , * ) {
+                             $ ( $ impl : tt ) * } $ ( $ rest : tt ) * ) => {
+                             $ crate :: decl_module ! (
+                             @ normalize $ ( # [ $ attr ] ) * pub struct $
+                             mod_type < $ trait_instance : $ trait_name > for
+                             enum $ call_type where origin : $ origin_type ,
+                             system = $ system { $ ( $ deposit_event ) * } {
+                             $ ( $ on_initialize ) * } { $ ( $ on_finalize ) *
+                             } {
+                             fn offchain_worker (
+                             $ ( $ param_name : $ param ) , * ) {
+                             $ ( $ impl ) * } } [ $ ( $ t ) * ] $ ( $ rest ) *
+                             ) ; } ; (
+                             @ normalize $ ( # [ $ attr : meta ] ) * pub
+                             struct $ mod_type : ident < $ trait_instance :
+                             ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path $ ( = $ module_default_instance : path ) ? )
+                             ? > for enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {
+                             $ ( $ deposit_event : tt ) * } {
+                             $ ( $ on_initialize : tt ) * } {
+                             $ ( $ on_finalize : tt ) * } {
+                             $ ( $ offchain : tt ) * } [ $ ( $ t : tt ) * ] $
+                             ( # [ doc = $ doc_attr : tt ] ) * $ fn_vis : vis
+                             fn $ fn_name : ident (
+                             $ origin : ident $ (
+                             , $ ( # [ $ codec_attr : ident ] ) * $ param_name
+                             : ident : $ param : ty ) * ) $ ( -> $ result : ty
+                             ) * { $ ( $ impl : tt ) * } $ ( $ rest : tt ) * )
+                             => {
+                             $ crate :: decl_module ! (
+                             @ normalize $ ( # [ $ attr ] ) * pub struct $
+                             mod_type < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > for enum $
+                             call_type where origin : $ origin_type , system =
+                             $ system { $ ( $ deposit_event ) * } {
+                             $ ( $ on_initialize ) * } { $ ( $ on_finalize ) *
+                             } { $ ( $ offchain ) * } [
+                             $ ( $ t ) * $ ( # [ doc = $ doc_attr ] ) * $
+                             fn_vis fn $ fn_name (
+                             $ origin $ (
+                             , $ ( # [ $ codec_attr ] ) * $ param_name : $
+                             param ) * ) $ ( -> $ result ) * { $ ( $ impl ) *
+                             } { $ ( $ instance : $ instantiable ) ? } ] $ (
+                             $ rest ) * ) ; } ; (
+                             @ normalize $ ( # [ $ attr : meta ] ) * pub
+                             struct $ mod_type : ident < $ trait_instance :
+                             ident : $ trait_name : ident $ (
+                             < I > , I : $ instantiable : path $ (
+                             = $ module_default_instance : path ) ? ) ? > for
+                             enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {
+                             $ ( $ deposit_event : tt ) * } {
+                             $ ( $ on_initialize : tt ) * } {
+                             $ ( $ on_finalize : tt ) * } {
+                             $ ( $ offchain : tt ) * } [ $ ( $ t : tt ) * ] $
+                             ( # [ doc = $ doc_attr : tt ] ) * $ fn_vis : vis
+                             fn $ fn_name : ident (
+                             $ origin : ident : T :: Origin $ (
+                             , $ ( # [ $ codec_attr : ident ] ) * $ param_name
+                             : ident : $ param : ty ) * ) $ ( -> $ result : ty
+                             ) * { $ ( $ impl : tt ) * } $ ( $ rest : tt ) * )
+                             => {
+                             compile_error ! (
+                             "First parameter of dispatch should be marked `origin` only, with no type specified \
+			(a bit like `self`). (For root-matching dispatches, ensure the first parameter does \
+			not use the `T::Origin` type.)"
+                             ) } ; (
+                             @ normalize $ ( # [ $ attr : meta ] ) * pub
+                             struct $ mod_type : ident < $ trait_instance :
+                             ident : $ trait_name : ident $ (
+                             < I > , I : $ instantiable : path $ (
+                             = $ module_default_instance : path ) ? ) ? > for
+                             enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {
+                             $ ( $ deposit_event : tt ) * } {
+                             $ ( $ on_initialize : tt ) * } {
+                             $ ( $ on_finalize : tt ) * } {
+                             $ ( $ offchain : tt ) * } [ $ ( $ t : tt ) * ] $
+                             ( # [ doc = $ doc_attr : tt ] ) * $ fn_vis : vis
+                             fn $ fn_name : ident (
+                             origin : $ origin : ty $ (
+                             , $ ( # [ $ codec_attr : ident ] ) * $ param_name
+                             : ident : $ param : ty ) * ) $ ( -> $ result : ty
+                             ) * { $ ( $ impl : tt ) * } $ ( $ rest : tt ) * )
+                             => {
+                             compile_error ! (
+                             "First parameter of dispatch should be marked `origin` only, with no type specified \
+			(a bit like `self`). (For root-matching dispatches, ensure the first parameter does \
+			not use the `T::Origin` type.)"
+                             ) } ; (
+                             @ normalize $ ( # [ $ attr : meta ] ) * pub
+                             struct $ mod_type : ident < $ trait_instance :
+                             ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path $ ( = $ module_default_instance : path ) ? )
+                             ? > for enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {
+                             $ ( $ deposit_event : tt ) * } {
+                             $ ( $ on_initialize : tt ) * } {
+                             $ ( $ on_finalize : tt ) * } {
+                             $ ( $ offchain : tt ) * } [ $ ( $ t : tt ) * ] $
+                             ( # [ doc = $ doc_attr : tt ] ) * $ fn_vis : vis
+                             fn $ fn_name : ident (
+                             $ (
+                             $ ( # [ $ codec_attr : ident ] ) * $ param_name :
+                             ident : $ param : ty ) , * ) $ ( -> $ result : ty
+                             ) * { $ ( $ impl : tt ) * } $ ( $ rest : tt ) * )
+                             => {
+                             $ crate :: decl_module ! (
+                             @ normalize $ ( # [ $ attr ] ) * pub struct $
+                             mod_type < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > for enum $
+                             call_type where origin : $ origin_type , system =
+                             $ system { $ ( $ deposit_event ) * } {
+                             $ ( $ on_initialize ) * } { $ ( $ on_finalize ) *
+                             } { $ ( $ offchain ) * } [
+                             $ ( $ t ) * $ ( # [ doc = $ doc_attr ] ) * $
+                             fn_vis fn $ fn_name (
+                             root $ (
+                             , $ ( # [ $ codec_attr ] ) * $ param_name : $
+                             param ) * ) $ ( -> $ result ) * { $ ( $ impl ) *
+                             } { $ ( $ instance : $ instantiable ) ? } ] $ (
+                             $ rest ) * ) ; } ; (
+                             @ normalize $ ( # [ $ attr : meta ] ) * pub
+                             struct $ mod_type : ident < $ trait_instance :
+                             ident : $ trait_name : ident $ (
+                             < I > , I : $ instantiable : path $ (
+                             = $ module_default_instance : path ) ? ) ? > for
+                             enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {
+                             $ ( $ deposit_event : tt ) * } {
+                             $ ( $ on_initialize : tt ) * } {
+                             $ ( $ on_finalize : tt ) * } {
+                             $ ( $ offchain : tt ) * } [ $ ( $ t : tt ) * ] )
+                             => {
+                             $ crate :: decl_module ! (
+                             @ imp $ ( # [ $ attr ] ) * pub struct $ mod_type
+                             < $ trait_instance : $ trait_name $ (
+                             < I > , I : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > for enum $
+                             call_type where origin : $ origin_type , system =
+                             $ system { $ ( $ t ) * } {
+                             $ ( $ deposit_event ) * } {
+                             $ ( $ on_initialize ) * } { $ ( $ on_finalize ) *
+                             } { $ ( $ offchain ) * } ) ; } ; (
+                             @ call root $ mod_type : ident < $ trait_instance
+                             : ident $ ( , $ instance : ident ) ? > $ fn_name
+                             : ident $ origin : ident $ system : ident [
+                             $ ( $ param_name : ident ) , * ] ) => {
+                             {
+                             $ system :: ensure_root ( $ origin ) ? ; < $
+                             mod_type < $ trait_instance $ ( , $ instance ) ?
+                             >> :: $ fn_name ( $ ( $ param_name ) , * ) } } ;
+                             (
+                             @ call $ ingore : ident $ mod_type : ident < $
+                             trait_instance : ident $ ( , $ instance : ident )
+                             ? > $ fn_name : ident $ origin : ident $ system :
+                             ident [ $ ( $ param_name : ident ) , * ] ) => {
+                             < $ mod_type < $ trait_instance $ ( , $ instance
+                             ) ? >> :: $ fn_name (
+                             $ origin $ ( , $ param_name ) * ) } ; (
+                             @ impl_deposit_event $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , I : $ instantiable : path ) ? > ; $
+                             system : ident ; ) => {  } ; (
+                             @ impl_deposit_event $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; $ system : ident ; $ vis : vis fn
+                             deposit_event $ (
+                             < $ event_trait_instance : ident $ (
+                             , $ event_instance : ident ) ? > ) ? (  ) =
+                             default ; ) => {
+                             impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $
+                             module < $ trait_instance $ ( , $ instance ) ? >
+                             {
+                             $ vis fn deposit_event (
+                             event : Event $ (
+                             < $ event_trait_instance $ ( , $ event_instance )
+                             ? > ) ? ) {
+                             < $ system :: Module < $ trait_instance >> ::
+                             deposit_event (
+                             < $ trait_instance as $ trait_name $ (
+                             < $ instance > ) ? > :: Event :: from ( event ) .
+                             into (  ) ) ; } } } ; (
+                             @ impl_deposit_event $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; $ system : ident ; $ vis : vis fn
+                             deposit_event ( $ param : ident : $ param_ty : ty
+                             ) { $ ( $ impl : tt ) * } ) => {
+                             impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $
+                             module < $ trait_instance $ ( , $ instance ) ? >
+                             {
+                             $ vis fn deposit_event ( $ param : $ param_ty ) {
+                             $ ( $ impl ) * } } } ; (
+                             @ impl_on_initialize $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; fn on_initialize (  ) {
+                             $ ( $ impl : tt ) * } ) => {
+                             impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: runtime_primitives :: traits :: OnInitialize <
+                             $ trait_instance :: BlockNumber > for $ module <
+                             $ trait_instance $ ( , $ instance ) ? > {
+                             fn on_initialize (
+                             _block_number_not_used : $ trait_instance ::
+                             BlockNumber ) { $ ( $ impl ) * } } } ; (
+                             @ impl_on_initialize $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; fn on_initialize (
+                             $ param : ident : $ param_ty : ty ) {
+                             $ ( $ impl : tt ) * } ) => {
+                             impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: runtime_primitives :: traits :: OnInitialize <
+                             $ trait_instance :: BlockNumber > for $ module <
+                             $ trait_instance $ ( , $ instance ) ? > {
+                             fn on_initialize ( $ param : $ param_ty ) {
+                             $ ( $ impl ) * } } } ; (
+                             @ impl_on_initialize $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; ) => {
+                             impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: runtime_primitives :: traits :: OnInitialize <
+                             $ trait_instance :: BlockNumber > for $ module <
+                             $ trait_instance $ ( , $ instance ) ? > {  } } ;
+                             (
+                             @ impl_on_finalize $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; fn on_finalize (  ) {
+                             $ ( $ impl : tt ) * } ) => {
+                             impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: runtime_primitives :: traits :: OnFinalize < $
+                             trait_instance :: BlockNumber > for $ module < $
+                             trait_instance $ ( , $ instance ) ? > {
+                             fn on_finalize (
+                             _block_number_not_used : $ trait_instance ::
+                             BlockNumber ) { $ ( $ impl ) * } } } ; (
+                             @ impl_on_finalize $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; fn on_finalize (
+                             $ param : ident : $ param_ty : ty ) {
+                             $ ( $ impl : tt ) * } ) => {
+                             impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: runtime_primitives :: traits :: OnFinalize < $
+                             trait_instance :: BlockNumber > for $ module < $
+                             trait_instance $ ( , $ instance ) ? > {
+                             fn on_finalize ( $ param : $ param_ty ) {
+                             $ ( $ impl ) * } } } ; (
+                             @ impl_on_finalize $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; ) => {
+                             impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: runtime_primitives :: traits :: OnFinalize < $
+                             trait_instance :: BlockNumber > for $ module < $
+                             trait_instance $ ( , $ instance ) ? > {  } } ; (
+                             @ impl_offchain $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; fn offchain_worker (  ) {
+                             $ ( $ impl : tt ) * } ) => {
+                             impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: runtime_primitives :: traits :: OffchainWorker
+                             < $ trait_instance :: BlockNumber > for $ module
+                             < $ trait_instance $ ( , $ instance ) ? > {
+                             fn generate_extrinsics (
+                             _block_number_not_used : $ trait_instance ::
+                             BlockNumber ) { $ ( $ impl ) * } } } ; (
+                             @ impl_offchain $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; fn offchain_worker (
+                             $ param : ident : $ param_ty : ty ) {
+                             $ ( $ impl : tt ) * } ) => {
+                             impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: runtime_primitives :: traits :: OffchainWorker
+                             < $ trait_instance :: BlockNumber > for $ module
+                             < $ trait_instance $ ( , $ instance ) ? > {
+                             fn generate_extrinsics ( $ param : $ param_ty ) {
+                             $ ( $ impl ) * } } } ; (
+                             @ impl_offchain $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; ) => {
+                             impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: runtime_primitives :: traits :: OffchainWorker
+                             < $ trait_instance :: BlockNumber > for $ module
+                             < $ trait_instance $ ( , $ instance ) ? > {  } }
+                             ; (
+                             @ impl_function $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; $ origin_ty : ty ; root ; $ (
+                             # [ doc = $ doc_attr : tt ] ) * $ vis : vis fn $
+                             name : ident (
+                             root $ ( , $ param : ident : $ param_ty : ty ) *
+                             ) { $ ( $ impl : tt ) * } ) => {
+                             $ ( # [ doc = $ doc_attr ] ) * $ vis fn $ name (
+                             $ ( $ param : $ param_ty ) , * ) -> $ crate ::
+                             dispatch :: Result {
+                             { $ ( $ impl ) * } Ok ( (  ) ) } } ; (
+                             @ impl_function $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; $ origin_ty : ty ; root ; $ (
+                             # [ doc = $ doc_attr : tt ] ) * $ vis : vis fn $
+                             name : ident (
+                             root $ ( , $ param : ident : $ param_ty : ty ) *
+                             ) -> $ result : ty { $ ( $ impl : tt ) * } ) => {
+                             $ ( # [ doc = $ doc_attr ] ) * $ vis fn $ name (
+                             $ ( $ param : $ param_ty ) , * ) -> $ result {
+                             $ ( $ impl ) * } } ; (
+                             @ impl_function $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; $ origin_ty : ty ; $ ignore : ident
+                             ; $ ( # [ doc = $ doc_attr : tt ] ) * $ vis : vis
+                             fn $ name : ident (
+                             $ origin : ident $ (
+                             , $ param : ident : $ param_ty : ty ) * ) {
+                             $ ( $ impl : tt ) * } ) => {
+                             $ ( # [ doc = $ doc_attr ] ) * $ vis fn $ name (
+                             $ origin : $ origin_ty $ ( , $ param : $ param_ty
+                             ) * ) -> $ crate :: dispatch :: Result {
+                             { $ ( $ impl ) * } Ok ( (  ) ) } } ; (
+                             @ impl_function $ module : ident < $
+                             trait_instance : ident : $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path ) ? > ; $ origin_ty : ty ; $ ignore : ident
+                             ; $ ( # [ doc = $ doc_attr : tt ] ) * $ vis : vis
+                             fn $ name : ident (
+                             $ origin : ident $ (
+                             , $ param : ident : $ param_ty : ty ) * ) -> $
+                             result : ty { $ ( $ impl : tt ) * } ) => {
+                             $ ( # [ doc = $ doc_attr ] ) * $ vis fn $ name (
+                             $ origin : $ origin_ty $ ( , $ param : $ param_ty
+                             ) * ) -> $ result { $ ( $ impl ) * } } ; (
+                             @ create_call_enum $ ( # [ $ attr : meta ] ) * $
+                             call_type : ident ; < $ trait_instance : ident :
+                             $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path $ ( = $ module_default_instance : path ) ? )
+                             ? > { $ ( $ generated_variants : tt ) * } {
+                             $ ( $ current_params : tt ) * } variant $ fn_name
+                             : ident ; $ ( # [ doc = $ doc_attr : tt ] ) * # [
+                             compact ] $ type : ty ; $ ( $ rest : tt ) * ) =>
+                             {
+                             $ crate :: decl_module ! {
+                             @ create_call_enum $ ( # [ $ attr ] ) * $
+                             call_type ; < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > {
+                             $ ( $ generated_variants ) * } {
+                             $ ( $ current_params ) * # [ codec ( compact ) ]
+                             $ type , } variant $ fn_name ; $ ( $ rest ) * } }
+                             ; (
+                             @ create_call_enum $ ( # [ $ attr : meta ] ) * $
+                             call_type : ident ; < $ trait_instance : ident :
+                             $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path $ ( = $ module_default_instance : path ) ? )
+                             ? > { $ ( $ generated_variants : tt ) * } {
+                             $ ( $ current_params : tt ) * } variant $ fn_name
+                             : ident ; $ ( # [ doc = $ doc_attr : tt ] ) * $
+                             type : ty ; $ ( $ rest : tt ) * ) => {
+                             $ crate :: decl_module ! {
+                             @ create_call_enum $ ( # [ $ attr ] ) * $
+                             call_type ; < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > {
+                             $ ( $ generated_variants ) * } {
+                             $ ( $ current_params ) * $ type , } variant $
+                             fn_name ; $ ( $ rest ) * } } ; (
+                             @ create_call_enum $ ( # [ $ attr : meta ] ) * $
+                             call_type : ident ; < $ trait_instance : ident :
+                             $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path $ ( = $ module_default_instance : path ) ? )
+                             ? > { $ ( $ generated_variants : tt ) * } {
+                             $ ( $ current_params : tt ) * } variant $ fn_name
+                             : ident ; $ ( # [ doc = $ doc_attr : tt ] ) * $ (
+                             variant $ next_fn_name : ident ; $ ( $ rest : tt
+                             ) * ) ? ) => {
+                             $ crate :: decl_module ! {
+                             @ create_call_enum $ ( # [ $ attr ] ) * $
+                             call_type ; < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > {
+                             $ ( $ generated_variants ) * # [
+                             allow ( non_camel_case_types ) ] $ (
+                             # [ doc = $ doc_attr ] ) * $ fn_name (
+                             $ ( $ current_params ) * ) , } {  } $ (
+                             variant $ next_fn_name ; $ ( $ rest ) * ) ? } } ;
+                             (
+                             @ create_call_enum $ ( # [ $ attr : meta ] ) * $
+                             call_type : ident ; < $ trait_instance : ident :
+                             $ trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path $ ( = $ module_default_instance : path ) ? )
+                             ? > { $ ( $ generated_variants : tt ) * } {  } )
+                             => {
+                             # [
+                             derive (
+                             $ crate :: codec :: Encode , $ crate :: codec ::
+                             Decode ) ] $ ( # [ $ attr ] ) * pub enum $
+                             call_type < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > {
+                             # [ doc ( hidden ) ] # [ codec ( skip ) ]
+                             __PhantomItem (
+                             $ crate :: rstd :: marker :: PhantomData < (
+                             $ trait_instance $ ( , $ instance ) ? ) > , $
+                             crate :: dispatch :: Never ) , $ (
+                             $ generated_variants ) * } } ; (
+                             @ imp $ ( # [ $ attr : meta ] ) * pub struct $
+                             mod_type : ident < $ trait_instance : ident : $
+                             trait_name : ident $ (
+                             < I > , $ instance : ident : $ instantiable :
+                             path $ ( = $ module_default_instance : path ) ? )
+                             ? > for enum $ call_type : ident where origin : $
+                             origin_type : ty , system = $ system : ident {
+                             $ (
+                             $ ( # [ doc = $ doc_attr : tt ] ) * $ fn_vis :
+                             vis fn $ fn_name : ident (
+                             $ from : ident $ (
+                             , $ ( # [ $ codec_attr : ident ] ) * $ param_name
+                             : ident : $ param : ty ) * ) $ ( -> $ result : ty
+                             ) * { $ ( $ impl : tt ) * } {
+                             $ (
+                             $ fn_instance : ident : $ fn_instantiable : path
+                             ) ? } ) * } { $ ( $ deposit_event : tt ) * } {
+                             $ ( $ on_initialize : tt ) * } {
+                             $ ( $ on_finalize : tt ) * } {
+                             $ ( $ offchain : tt ) * } ) => {
+                             $ crate :: __check_reserved_fn_name ! {
+                             $ ( $ fn_name ) * } # [
+                             derive ( Clone , Copy , PartialEq , Eq ) ] # [
+                             cfg_attr ( feature = "std" , derive ( Debug ) ) ]
+                             pub struct $ mod_type < $ trait_instance : $
+                             trait_name $ (
+                             < I > , $ instance : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > (
+                             $ crate :: rstd :: marker :: PhantomData < (
+                             $ trait_instance $ ( , $ instance ) ? ) > ) ; $
+                             crate :: decl_module ! {
+                             @ impl_on_initialize $ mod_type < $
+                             trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > ; $ (
+                             $ on_initialize ) * } $ crate :: decl_module ! {
+                             @ impl_on_finalize $ mod_type < $ trait_instance
+                             : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > ; $ (
+                             $ on_finalize ) * } $ crate :: decl_module ! {
+                             @ impl_offchain $ mod_type < $ trait_instance : $
+                             trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > ; $ (
+                             $ offchain ) * } $ crate :: decl_module ! {
+                             @ impl_deposit_event $ mod_type < $
+                             trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > ; $
+                             system ; $ ( $ deposit_event ) * }
+                             /// Can also be called using [`Call`].
+                              ///
+                              /// [`Call`]: enum.Call.html
+                              impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $
+                             mod_type < $ trait_instance $ ( , $ instance ) ?
+                             > {
+                             $ (
+                             $ crate :: decl_module ! {
+                             @ impl_function $ mod_type < $ trait_instance : $
+                             trait_name $ (
+                             < I > , $ fn_instance : $ fn_instantiable ) ? > ;
+                             $ origin_type ; $ from ; $ (
+                             # [ doc = $ doc_attr ] ) * $ fn_vis fn $ fn_name
+                             ( $ from $ ( , $ param_name : $ param ) * ) $ (
+                             -> $ result ) * { $ ( $ impl ) * } } ) * } $
+                             crate :: decl_module ! {
+                             @ create_call_enum $ ( # [ $ attr ] ) * $
+                             call_type ; < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable $ (
+                             = $ module_default_instance ) ? ) ? > {  } {  } $
+                             (
+                             variant $ fn_name ; $ ( # [ doc = $ doc_attr ] )
+                             * $ ( $ ( # [ $ codec_attr ] ) * $ param ; ) * )
+                             * } impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: dispatch :: Clone for $ call_type < $
+                             trait_instance $ ( , $ instance ) ? > {
+                             fn clone ( & self ) -> Self {
+                             match * self {
+                             $ (
+                             $ call_type :: $ fn_name (
+                             $ ( ref $ param_name ) , * ) => $ call_type :: $
+                             fn_name (
+                             $ ( ( * $ param_name ) . clone (  ) ) , * ) , ) *
+                             _ => unreachable ! (  ) , } } } impl < $
+                             trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: dispatch :: PartialEq for $ call_type < $
+                             trait_instance $ ( , $ instance ) ? > {
+                             fn eq ( & self , _other : & Self ) -> bool {
+                             match * self {
+                             $ (
+                             $ call_type :: $ fn_name (
+                             $ ( ref $ param_name ) , * ) => {
+                             let self_params = ( $ ( $ param_name , ) * ) ; if
+                             let $ call_type :: $ fn_name (
+                             $ ( ref $ param_name ) , * ) = * _other {
+                             self_params == ( $ ( $ param_name , ) * ) } else
+                             {
+                             match * _other {
+                             $ call_type :: __PhantomItem ( _ , _ ) =>
+                             unreachable ! (  ) , _ => false , } } } ) * _ =>
+                             unreachable ! (  ) , } } } impl < $
+                             trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: dispatch :: Eq for $ call_type < $
+                             trait_instance $ ( , $ instance ) ? > {  } # [
+                             cfg ( feature = "std" ) ] impl < $ trait_instance
+                             : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: dispatch :: fmt :: Debug for $ call_type < $
+                             trait_instance $ ( , $ instance ) ? > {
+                             fn fmt (
+                             & self , _f : & mut $ crate :: dispatch :: fmt ::
+                             Formatter ) -> $ crate :: dispatch :: result ::
+                             Result < (  ) , $ crate :: dispatch :: fmt ::
+                             Error > {
+                             match * self {
+                             $ (
+                             $ call_type :: $ fn_name (
+                             $ ( ref $ param_name ) , * ) => write ! (
+                             _f , "{}{:?}" , stringify ! ( $ fn_name ) , (
+                             $ ( $ param_name . clone (  ) , ) * ) ) , ) * _
+                             => unreachable ! (  ) , } } } impl < $
+                             trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: dispatch :: Dispatchable for $ call_type < $
+                             trait_instance $ ( , $ instance ) ? > {
+                             type Trait = $ trait_instance ; type Origin = $
+                             origin_type ; fn dispatch (
+                             self , _origin : Self :: Origin ) -> $ crate ::
+                             dispatch :: Result {
+                             match self {
+                             $ (
+                             $ call_type :: $ fn_name ( $ ( $ param_name ) , *
+                             ) => {
+                             $ crate :: decl_module ! (
+                             @ call $ from $ mod_type < $ trait_instance $ (
+                             , $ fn_instance ) ? > $ fn_name _origin $ system
+                             [ $ ( $ param_name ) , * ] ) } , ) * $ call_type
+                             :: __PhantomItem ( _ , _ ) => {
+                             unreachable ! (
+                             "__PhantomItem should never be used." ) } , } } }
+                             impl < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $ crate
+                             :: dispatch :: Callable for $ mod_type < $
+                             trait_instance $ ( , $ instance ) ? > {
+                             type Call = $ call_type < $ trait_instance $ (
+                             , $ instance ) ? > ; } impl < $ trait_instance :
+                             $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $
+                             mod_type < $ trait_instance $ ( , $ instance ) ?
+                             > {
+                             # [ doc ( hidden ) ] pub fn dispatch < D : $
+                             crate :: dispatch :: Dispatchable < Trait = $
+                             trait_instance >> ( d : D , origin : D :: Origin
+                             ) -> $ crate :: dispatch :: Result {
+                             d . dispatch ( origin ) } } $ crate ::
+                             __dispatch_impl_metadata ! {
+                             $ mod_type < $ trait_instance : $ trait_name $ (
+                             < I > , $ instance : $ instantiable ) ? > $
+                             call_type $ origin_type {
+                             $ (
+                             $ ( # [ doc = $ doc_attr ] ) * fn $ fn_name (
+                             $ from $ (
+                             , $ ( # [ $ codec_attr ] ) * $ param_name : $
+                             param ) * ) ; ) * } } });
+    pub trait IsSubType<T: Callable> {
+        fn is_aux_sub_type(&self)
+        -> Option<&<T as Callable>::Call>;
+    }
+    /// Implement a meta-dispatch module to dispatch to other dispatchers.
+    #[macro_export]
+    macro_rules! impl_outer_dispatch((
+                                     $ ( # [ $ attr : meta ] ) * pub enum $
+                                     call_type : ident for $ runtime : ident
+                                     where origin : $ origin : ty {
+                                     $ (
+                                     $ module : ident :: $ camelcase : ident ,
+                                     ) * } ) => {
+                                     $ ( # [ $ attr ] ) * # [
+                                     derive (
+                                     Clone , PartialEq , Eq , $ crate :: codec
+                                     :: Encode , $ crate :: codec :: Decode )
+                                     ] # [
+                                     cfg_attr (
+                                     feature = "std" , derive ( Debug ) ) ]
+                                     pub enum $ call_type {
+                                     $ (
+                                     $ camelcase (
+                                     $ crate :: dispatch :: CallableCallFor <
+                                     $ camelcase > ) , ) * } impl $ crate ::
+                                     dispatch :: Dispatchable for $ call_type
+                                     {
+                                     type Origin = $ origin ; type Trait = $
+                                     call_type ; fn dispatch (
+                                     self , origin : $ origin ) -> $ crate ::
+                                     dispatch :: Result {
+                                     match self {
+                                     $ (
+                                     $ call_type :: $ camelcase ( call ) =>
+                                     call . dispatch ( origin ) , ) * } } } $
+                                     (
+                                     impl $ crate :: dispatch :: IsSubType < $
+                                     camelcase > for $ call_type {
+                                     fn is_aux_sub_type ( & self ) -> Option <
+                                     & < $ camelcase as $ crate :: dispatch ::
+                                     Callable > :: Call > {
+                                     if let $ call_type :: $ camelcase ( ref r
+                                     ) = * self { Some ( r ) } else { None } }
+                                     } ) * });
+    /// Implement metadata for dispatch.
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __dispatch_impl_metadata((
+                                          $ mod_type : ident < $
+                                          trait_instance : ident : $
+                                          trait_name : ident $ (
+                                          < I > , $ instance : ident : $
+                                          instantiable : path ) ? > $ (
+                                          $ rest : tt ) * ) => {
+                                          impl < $ trait_instance : $
+                                          trait_name $ (
+                                          < I > , $ instance : $ instantiable
+                                          ) ? > $ mod_type < $ trait_instance
+                                          $ ( , $ instance ) ? > {
+                                          # [ doc ( hidden ) ] pub fn
+                                          call_functions (  ) -> & 'static [
+                                          $ crate :: dispatch ::
+                                          FunctionMetadata ] {
+                                          $ crate :: __call_to_functions ! (
+                                          $ ( $ rest ) * ) } } });
+    /// Convert the list of calls into their JSON representation, joined by ",".
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __call_to_functions((
+                                     $ call_type : ident $ origin_type : ty {
+                                     $ (
+                                     $ ( # [ doc = $ doc_attr : tt ] ) * fn $
+                                     fn_name : ident (
+                                     $ from : ident $ (
+                                     , $ ( # [ $ codec_attr : ident ] ) * $
+                                     param_name : ident : $ param : ty ) * ) ;
+                                     ) * } ) => {
+                                     $ crate :: __functions_to_metadata ! (
+                                     0 ; $ origin_type ; ; $ (
+                                     fn $ fn_name (
+                                     $ (
+                                     $ ( # [ $ codec_attr ] ) * $ param_name :
+                                     $ param ) , * ) ; $ ( $ doc_attr ) , * ;
+                                     ) * ) } ;);
+    /// Convert a list of functions into a list of `FunctionMetadata` items.
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __functions_to_metadata((
+                                         $ fn_id : expr ; $ origin_type : ty ;
+                                         $ ( $ function_metadata : expr ) , *
+                                         ; fn $ fn_name : ident (
+                                         $ (
+                                         $ ( # [ $ codec_attr : ident ] ) * $
+                                         param_name : ident : $ param : ty ) ,
+                                         * ) ; $ ( $ fn_doc : expr ) , * ; $ (
+                                         $ rest : tt ) * ) => {
+                                         $ crate :: __functions_to_metadata !
+                                         (
+                                         $ fn_id + 1 ; $ origin_type ; $ (
+                                         $ function_metadata , ) * $ crate ::
+                                         __function_to_metadata ! (
+                                         fn $ fn_name (
+                                         $ (
+                                         $ ( # [ $ codec_attr ] ) * $
+                                         param_name : $ param ) , * ) ; $ (
+                                         $ fn_doc ) , * ; $ fn_id ; ) ; $ (
+                                         $ rest ) * ) } ; (
+                                         $ fn_id : expr ; $ origin_type : ty ;
+                                         $ ( $ function_metadata : expr ) , *
+                                         ; ) => {
+                                         & [ $ ( $ function_metadata ) , * ]
+                                         });
+    /// Convert a function into its metadata representation.
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __function_to_metadata((
+                                        fn $ fn_name : ident (
+                                        $ (
+                                        $ ( # [ $ codec_attr : ident ] ) * $
+                                        param_name : ident : $ param : ty ) ,
+                                        * ) ; $ ( $ fn_doc : expr ) , * ; $
+                                        fn_id : expr ; ) => {
+                                        $ crate :: dispatch ::
+                                        FunctionMetadata {
+                                        name : $ crate :: dispatch ::
+                                        DecodeDifferent :: Encode (
+                                        stringify ! ( $ fn_name ) ) ,
+                                        arguments : $ crate :: dispatch ::
+                                        DecodeDifferent :: Encode (
+                                        & [
+                                        $ (
+                                        $ crate :: dispatch ::
+                                        FunctionArgumentMetadata {
+                                        name : $ crate :: dispatch ::
+                                        DecodeDifferent :: Encode (
+                                        stringify ! ( $ param_name ) ) , ty :
+                                        $ crate :: dispatch :: DecodeDifferent
+                                        :: Encode (
+                                        $ crate :: __function_to_metadata ! (
+                                        @ stringify_expand_attr $ (
+                                        # [ $ codec_attr ] ) * $ param_name :
+                                        $ param ) ) , } ) , * ] ) ,
+                                        documentation : $ crate :: dispatch ::
+                                        DecodeDifferent :: Encode (
+                                        & [ $ ( $ fn_doc ) , * ] ) , } } ; (
+                                        @ stringify_expand_attr # [ compact ]
+                                        $ param_name : ident : $ param : ty )
+                                        => {
+                                        concat ! (
+                                        "Compact<" , stringify ! ( $ param ) ,
+                                        ">" ) } ; (
+                                        @ stringify_expand_attr $ param_name :
+                                        ident : $ param : ty ) => {
+                                        stringify ! ( $ param ) } ; (
+                                        @ stringify_expand_attr $ (
+                                        # [ codec_attr : ident ] ) * $
+                                        param_name : ident : $ param : ty ) =>
+                                        {
+                                        compile_error ! (
+                                        concat ! (
+                                        "Invalid attribute for parameter `" ,
+                                        stringify ! ( $ param_name ) ,
+                                        "`, the following attributes are supported: `#[compact]`"
+                                        ) ) });
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __check_reserved_fn_name((
+                                          deposit_event $ ( $ rest : ident ) *
+                                          ) => {
+                                          $ crate :: __check_reserved_fn_name
+                                          ! ( @ compile_error deposit_event )
+                                          ; } ; (
+                                          on_initialize $ ( $ rest : ident ) *
+                                          ) => {
+                                          $ crate :: __check_reserved_fn_name
+                                          ! ( @ compile_error on_initialize )
+                                          ; } ; (
+                                          on_initialise $ ( $ rest : ident ) *
+                                          ) => {
+                                          $ crate :: __check_reserved_fn_name
+                                          ! ( @ compile_error on_initialise )
+                                          ; } ; (
+                                          on_finalize $ ( $ rest : ident ) * )
+                                          => {
+                                          $ crate :: __check_reserved_fn_name
+                                          ! ( @ compile_error on_finalize ) ;
+                                          } ; (
+                                          on_finalise $ ( $ rest : ident ) * )
+                                          => {
+                                          $ crate :: __check_reserved_fn_name
+                                          ! ( @ compile_error on_finalise ) ;
+                                          } ; (
+                                          offchain_worker $ ( $ rest : ident )
+                                          * ) => {
+                                          $ crate :: __check_reserved_fn_name
+                                          ! ( @ compile_error offchain_worker
+                                          ) ; } ; (
+                                          $ t : ident $ ( $ rest : ident ) * )
+                                          => {
+                                          $ crate :: __check_reserved_fn_name
+                                          ! ( $ ( $ rest ) * ) ; } ; (  ) => {
+                                           } ; (
+                                          @ compile_error $ ident : ident ) =>
+                                          {
+                                          compile_error ! (
+                                          concat ! (
+                                          "Invalid call fn name: `" ,
+                                          stringify ! ( $ ident ) ,
+                                          "`, name is reserved and doesn't match expected signature, please refer to `decl_module!`"
+                                          ,
+                                          " documentation to see the appropriate usage, or rename it to an unreserved keyword."
+                                          ) ) ; } ;);
+}
+#[macro_use]
+pub mod storage {
+    //! Stuff to do with the runtime's storage.
+    use crate::rstd::prelude::*;
+    use crate::rstd::borrow::Borrow;
+    use codec::{Codec, Encode, Decode, KeyedVec, Input, EncodeAppend};
+    use hashed::generator::{HashedStorage, StorageHasher};
+    use unhashed::generator::UnhashedStorage;
+    #[macro_use]
+    pub mod storage_items {
+        //! Strongly typed wrappers around values in storage.
+        //!
+        //! This crate exports a macro `storage_items!` and traits describing behavior of generated
+        //! structs.
+        //!
+        //! Three kinds of data types are currently supported:
+        //!   - values
+        //!   - maps
+        //!   - lists
+        //!
+        //! # Examples:
+        //!
+        //! ```rust
+        //! #[macro_use]
+        //! extern crate srml_support;
+        //!
+        //! type AuthorityId = [u8; 32];
+        //! type Balance = u64;
+        //! pub type SessionKey = [u8; 32];
+        //!
+        //! storage_items! {
+        //!     // public value
+        //!     pub Value: b"putd_key" => SessionKey;
+        //!     // private map.
+        //!     Balances: b"private_map:" => map [AuthorityId => Balance];
+        //!     // private list.
+        //!     Authorities: b"auth:" => list [AuthorityId];
+        //! }
+        //!
+        //!# fn main() { }
+        //! ```
+        #[doc(hidden)]
+        pub use crate::rstd::borrow::Borrow;
+        #[doc(hidden)]
+        pub use crate::rstd::marker::PhantomData;
+        #[doc(hidden)]
+        pub use crate::rstd::boxed::Box;
+        /// Declares strongly-typed wrappers around codec-compatible types in storage.
+        #[macro_export]
+        macro_rules! storage_items((
+                                   $ name : ident : $ key : expr => $ ty : ty
+                                   ; $ ( $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) (  ) ( OPTION_TYPE Option < $ ty > ) (
+                                   get ) ( take ) $ name : $ key => $ ty ) ;
+                                   storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   pub $ name : ident : $ key : expr => $ ty :
+                                   ty ; $ ( $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) (  ) ( OPTION_TYPE Option < $ ty >
+                                   ) ( get ) ( take ) $ name : $ key => $ ty )
+                                   ; storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   $ name : ident : $ key : expr => default $
+                                   ty : ty ; $ ( $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) (  ) ( RAW_TYPE $ ty ) (
+                                   get_or_default ) ( take_or_default ) $ name
+                                   : $ key => $ ty ) ; storage_items ! (
+                                   $ ( $ t ) * ) ; } ; (
+                                   pub $ name : ident : $ key : expr =>
+                                   default $ ty : ty ; $ ( $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) (  ) ( RAW_TYPE $ ty ) (
+                                   get_or_default ) ( take_or_default ) $ name
+                                   : $ key => $ ty ) ; storage_items ! (
+                                   $ ( $ t ) * ) ; } ; (
+                                   $ name : ident : $ key : expr => required $
+                                   ty : ty ; $ ( $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) (  ) ( RAW_TYPE $ ty ) ( require ) (
+                                   take_or_panic ) $ name : $ key => $ ty ) ;
+                                   storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   pub $ name : ident : $ key : expr =>
+                                   required $ ty : ty ; $ ( $ t : tt ) * ) =>
+                                   {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) (  ) ( RAW_TYPE $ ty ) ( require )
+                                   ( take_or_panic ) $ name : $ key => $ ty )
+                                   ; storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   $ name : ident get ( $ getfn : ident ) : $
+                                   key : expr => $ ty : ty ; $ ( $ t : tt ) *
+                                   ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) ( $ getfn ) (
+                                   OPTION_TYPE Option < $ ty > ) ( get ) (
+                                   take ) $ name : $ key => $ ty ) ;
+                                   storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   pub $ name : ident get ( $ getfn : ident )
+                                   : $ key : expr => $ ty : ty ; $ ( $ t : tt
+                                   ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) ( $ getfn ) (
+                                   OPTION_TYPE Option < $ ty > ) ( get ) (
+                                   take ) $ name : $ key => $ ty ) ;
+                                   storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   $ name : ident get ( $ getfn : ident ) : $
+                                   key : expr => default $ ty : ty ; $ (
+                                   $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) ( $ getfn ) ( RAW_TYPE $ ty ) (
+                                   get_or_default ) ( take_or_default ) $ name
+                                   : $ key => $ ty ) ; storage_items ! (
+                                   $ ( $ t ) * ) ; } ; (
+                                   pub $ name : ident get ( $ getfn : ident )
+                                   : $ key : expr => default $ ty : ty ; $ (
+                                   $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) ( $ getfn ) ( RAW_TYPE $ ty ) (
+                                   get_or_default ) ( take_or_default ) $ name
+                                   : $ key => $ ty ) ; storage_items ! (
+                                   $ ( $ t ) * ) ; } ; (
+                                   $ name : ident get ( $ getfn : ident ) : $
+                                   key : expr => required $ ty : ty ; $ (
+                                   $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) ( $ getfn ) ( RAW_TYPE $ ty ) (
+                                   require ) ( take_or_panic ) $ name : $ key
+                                   => $ ty ) ; storage_items ! ( $ ( $ t ) * )
+                                   ; } ; (
+                                   pub $ name : ident get ( $ getfn : ident )
+                                   : $ key : expr => required $ ty : ty ; $ (
+                                   $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) ( $ getfn ) ( RAW_TYPE $ ty ) (
+                                   require ) ( take_or_panic ) $ name : $ key
+                                   => $ ty ) ; storage_items ! ( $ ( $ t ) * )
+                                   ; } ; (
+                                   $ name : ident : $ prefix : expr => map [
+                                   $ kty : ty => $ ty : ty ] ; $ ( $ t : tt )
+                                   * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) (  ) ( OPTION_TYPE Option < $ ty > ) (
+                                   get ) ( take ) $ name : $ prefix => map [
+                                   $ kty => $ ty ] ) ; storage_items ! (
+                                   $ ( $ t ) * ) ; } ; (
+                                   pub $ name : ident : $ prefix : expr => map
+                                   [ $ kty : ty => $ ty : ty ] ; $ ( $ t : tt
+                                   ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) (  ) ( OPTION_TYPE Option < $ ty >
+                                   ) ( get ) ( take ) $ name : $ prefix => map
+                                   [ $ kty => $ ty ] ) ; storage_items ! (
+                                   $ ( $ t ) * ) ; } ; (
+                                   $ name : ident : $ prefix : expr => default
+                                   map [ $ kty : ty => $ ty : ty ] ; $ (
+                                   $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) (  ) ( RAW_TYPE $ ty ) (
+                                   get_or_default ) ( take_or_default ) $ name
+                                   : $ prefix => map [ $ kty => $ ty ] ) ;
+                                   storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   pub $ name : ident : $ prefix : expr =>
+                                   default map [ $ kty : ty => $ ty : ty ] ; $
+                                   ( $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) (  ) ( RAW_TYPE $ ty ) (
+                                   get_or_default ) ( take_or_default ) $ name
+                                   : $ prefix => map [ $ kty => $ ty ] ) ;
+                                   storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   $ name : ident : $ prefix : expr =>
+                                   required map [ $ kty : ty => $ ty : ty ] ;
+                                   $ ( $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) (  ) ( RAW_TYPE $ ty ) ( require ) (
+                                   take_or_panic ) $ name : $ prefix => map [
+                                   $ kty => $ ty ] ) ; storage_items ! (
+                                   $ ( $ t ) * ) ; } ; (
+                                   pub $ name : ident : $ prefix : expr =>
+                                   required map [ $ kty : ty => $ ty : ty ] ;
+                                   $ ( $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) (  ) ( RAW_TYPE $ ty ) ( require )
+                                   ( take_or_panic ) $ name : $ prefix => map
+                                   [ $ kty => $ ty ] ) ; storage_items ! (
+                                   $ ( $ t ) * ) ; } ; (
+                                   $ name : ident get ( $ getfn : ident ) : $
+                                   prefix : expr => map [
+                                   $ kty : ty => $ ty : ty ] ; $ ( $ t : tt )
+                                   * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) ( $ getfn ) (
+                                   OPTION_TYPE Option < $ ty > ) ( get ) (
+                                   take ) $ name : $ prefix => map [
+                                   $ kty => $ ty ] ) ; storage_items ! (
+                                   $ ( $ t ) * ) ; } ; (
+                                   pub $ name : ident get ( $ getfn : ident )
+                                   : $ prefix : expr => map [
+                                   $ kty : ty => $ ty : ty ] ; $ ( $ t : tt )
+                                   * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) ( $ getfn ) (
+                                   OPTION_TYPE Option < $ ty > ) ( get ) (
+                                   take ) $ name : $ prefix => map [
+                                   $ kty => $ ty ] ) ; storage_items ! (
+                                   $ ( $ t ) * ) ; } ; (
+                                   $ name : ident get ( $ getfn : ident ) : $
+                                   prefix : expr => default map [
+                                   $ kty : ty => $ ty : ty ] ; $ ( $ t : tt )
+                                   * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) ( $ getfn ) ( RAW_TYPE $ ty ) (
+                                   get_or_default ) ( take_or_default ) $ name
+                                   : $ prefix => map [ $ kty => $ ty ] ) ;
+                                   storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   pub $ name : ident get ( $ getfn : ident )
+                                   : $ prefix : expr => default map [
+                                   $ kty : ty => $ ty : ty ] ; $ ( $ t : tt )
+                                   * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) ( $ getfn ) ( RAW_TYPE $ ty ) (
+                                   get_or_default ) ( take_or_default ) $ name
+                                   : $ prefix => map [ $ kty => $ ty ] ) ;
+                                   storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   $ name : ident get ( $ getfn : ident ) : $
+                                   prefix : expr => required map [
+                                   $ kty : ty => $ ty : ty ] ; $ ( $ t : tt )
+                                   * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) ( $ getfn ) ( RAW_TYPE $ ty ) (
+                                   require ) ( take_or_panic ) $ name : $
+                                   prefix => map [ $ kty => $ ty ] ) ;
+                                   storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   pub $ name : ident get ( $ getfn : ident )
+                                   : $ prefix : expr => required map [
+                                   $ kty : ty => $ ty : ty ] ; $ ( $ t : tt )
+                                   * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) ( $ getfn ) ( RAW_TYPE $ ty ) (
+                                   require ) ( take_or_panic ) $ name : $
+                                   prefix => map [ $ kty => $ ty ] ) ;
+                                   storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   $ name : ident : $ prefix : expr => list [
+                                   $ ty : ty ] ; $ ( $ t : tt ) * ) => {
+                                   $ crate :: __storage_items_internal ! (
+                                   (  ) $ name : $ prefix => list [ $ ty ] ) ;
+                                   storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                   pub $ name : ident : $ prefix : expr =>
+                                   list [ $ ty : ty ] ; $ ( $ t : tt ) * ) =>
+                                   {
+                                   $ crate :: __storage_items_internal ! (
+                                   ( pub ) $ name : $ prefix => list [ $ ty ]
+                                   ) ; storage_items ! ( $ ( $ t ) * ) ; } ; (
+                                    ) => (  ));
+        #[macro_export]
+        #[doc(hidden)]
+        macro_rules! __storage_items_internal((
+                                              ( $ ( $ vis : tt ) * ) (
+                                              $ get_fn : ident ) (
+                                              $ wraptype : ident $ gettype :
+                                              ty ) ( $ getter : ident ) (
+                                              $ taker : ident ) $ name : ident
+                                              : $ key : expr => $ ty : ty ) =>
+                                              {
+                                              $ crate ::
+                                              __storage_items_internal ! {
+                                              ( $ ( $ vis ) * ) (  ) (
+                                              $ wraptype $ gettype ) (
+                                              $ getter ) ( $ taker ) $ name :
+                                              $ key => $ ty } pub fn $ get_fn
+                                              (  ) -> $ gettype {
+                                              < $ name as $ crate :: storage
+                                              :: hashed :: generator ::
+                                              StorageValue < $ ty >> :: get (
+                                              & $ crate :: storage ::
+                                              RuntimeStorage ) } } ; (
+                                              ( $ ( $ vis : tt ) * ) (  ) (
+                                              $ wraptype : ident $ gettype :
+                                              ty ) ( $ getter : ident ) (
+                                              $ taker : ident ) $ name : ident
+                                              : $ key : expr => $ ty : ty ) =>
+                                              {
+                                              $ ( $ vis ) * struct $ name ;
+                                              impl $ crate :: storage ::
+                                              hashed :: generator ::
+                                              StorageValue < $ ty > for $ name
+                                              {
+                                              type Query = $ gettype ;
+                                              /// Get the storage key.
+                                               fn key (  ) -> & 'static [ u8 ]
+                                              { $ key }
+                                              /// Load the value from the provided storage instance.
+                                               fn get < S : $ crate ::
+                                              HashedStorage < $ crate ::
+                                              Twox128 >> ( storage : & S ) ->
+                                              Self :: Query {
+                                              storage . $ getter ( $ key ) }
+                                              /// Take a value from storage, removing it afterwards.
+                                               fn take < S : $ crate ::
+                                              HashedStorage < $ crate ::
+                                              Twox128 >> ( storage : & S ) ->
+                                              Self :: Query {
+                                              storage . $ taker ( $ key ) }
+                                              /// Mutate this value.
+                                               fn mutate < R , F : FnOnce (
+                                              & mut Self :: Query ) -> R , S :
+                                              $ crate :: HashedStorage < $
+                                              crate :: Twox128 >> (
+                                              f : F , storage : & S ) -> R {
+                                              let mut val = < Self as $ crate
+                                              :: storage :: hashed ::
+                                              generator :: StorageValue < $ ty
+                                              >> :: get ( storage ) ; let ret
+                                              = f ( & mut val ) ; $ crate ::
+                                              __handle_wrap_internal ! (
+                                              $ wraptype {
+                                              < Self as $ crate :: storage ::
+                                              hashed :: generator ::
+                                              StorageValue < $ ty >> :: put (
+                                              & val , storage ) } {
+                                              match val {
+                                              Some ( ref val ) => < Self as $
+                                              crate :: storage :: hashed ::
+                                              generator :: StorageValue < $ ty
+                                              >> :: put ( & val , storage ) ,
+                                              None => < Self as $ crate ::
+                                              storage :: hashed :: generator
+                                              :: StorageValue < $ ty >> ::
+                                              kill ( storage ) , } } ) ; ret }
+                                              } } ; (
+                                              ( $ ( $ vis : tt ) * ) (
+                                              $ get_fn : ident ) (
+                                              $ wraptype : ident $ gettype :
+                                              ty ) ( $ getter : ident ) (
+                                              $ taker : ident ) $ name : ident
+                                              : $ prefix : expr => map [
+                                              $ kty : ty => $ ty : ty ] ) => {
+                                              $ crate ::
+                                              __storage_items_internal ! {
+                                              ( $ ( $ vis ) * ) (  ) (
+                                              $ wraptype $ gettype ) (
+                                              $ getter ) ( $ taker ) $ name :
+                                              $ prefix => map [ $ kty => $ ty
+                                              ] } pub fn $ get_fn < K : $
+                                              crate :: storage :: generator ::
+                                              Borrow < $ kty >> ( key : K ) ->
+                                              $ gettype {
+                                              < $ name as $ crate :: storage
+                                              :: hashed :: generator ::
+                                              StorageMap < $ kty , $ ty >> ::
+                                              get (
+                                              key . borrow (  ) , & $ crate ::
+                                              storage :: RuntimeStorage ) } }
+                                              ; (
+                                              ( $ ( $ vis : tt ) * ) (  ) (
+                                              $ wraptype : ident $ gettype :
+                                              ty ) ( $ getter : ident ) (
+                                              $ taker : ident ) $ name : ident
+                                              : $ prefix : expr => map [
+                                              $ kty : ty => $ ty : ty ] ) => {
+                                              $ ( $ vis ) * struct $ name ;
+                                              impl $ crate :: storage ::
+                                              hashed :: generator ::
+                                              StorageMap < $ kty , $ ty > for
+                                              $ name {
+                                              type Query = $ gettype ; type
+                                              Hasher = $ crate :: Blake2_256 ;
+                                              /// Get the prefix key in storage.
+                                               fn prefix (  ) -> & 'static [
+                                              u8 ] { $ prefix }
+                                              /// Get the storage key used to fetch a value corresponding to a specific key.
+                                               fn key_for ( x : & $ kty ) -> $
+                                              crate :: rstd :: vec :: Vec < u8
+                                              > {
+                                              let mut key = $ prefix . to_vec
+                                              (  ) ; $ crate :: codec ::
+                                              Encode :: encode_to (
+                                              x , & mut key ) ; key }
+                                              /// Load the value associated with the given key from the map.
+                                               fn get < S : $ crate ::
+                                              HashedStorage < Self :: Hasher
+                                              >> (
+                                              key : & $ kty , storage : & S )
+                                              -> Self :: Query {
+                                              let key = < $ name as $ crate ::
+                                              storage :: hashed :: generator
+                                              :: StorageMap < $ kty , $ ty >>
+                                              :: key_for ( key ) ; storage . $
+                                              getter ( & key [ .. ] ) }
+                                              /// Take the value, reading and removing it.
+                                               fn take < S : $ crate ::
+                                              HashedStorage < Self :: Hasher
+                                              >> (
+                                              key : & $ kty , storage : & S )
+                                              -> Self :: Query {
+                                              let key = < $ name as $ crate ::
+                                              storage :: hashed :: generator
+                                              :: StorageMap < $ kty , $ ty >>
+                                              :: key_for ( key ) ; storage . $
+                                              taker ( & key [ .. ] ) }
+                                              /// Mutate the value under a key.
+                                               fn mutate < R , F : FnOnce (
+                                              & mut Self :: Query ) -> R , S :
+                                              $ crate :: HashedStorage < Self
+                                              :: Hasher >> (
+                                              key : & $ kty , f : F , storage
+                                              : & S ) -> R {
+                                              let mut val = < Self as $ crate
+                                              :: storage :: hashed ::
+                                              generator :: StorageMap < $ kty
+                                              , $ ty >> :: take (
+                                              key , storage ) ; let ret = f (
+                                              & mut val ) ; $ crate ::
+                                              __handle_wrap_internal ! (
+                                              $ wraptype {
+                                              < Self as $ crate :: storage ::
+                                              hashed :: generator ::
+                                              StorageMap < $ kty , $ ty >> ::
+                                              insert ( key , & val , storage )
+                                              } {
+                                              match val {
+                                              Some ( ref val ) => < Self as $
+                                              crate :: storage :: hashed ::
+                                              generator :: StorageMap < $ kty
+                                              , $ ty >> :: insert (
+                                              key , & val , storage ) , None
+                                              => < Self as $ crate :: storage
+                                              :: hashed :: generator ::
+                                              StorageMap < $ kty , $ ty >> ::
+                                              remove ( key , storage ) , } } )
+                                              ; ret } } } ; (
+                                              ( $ ( $ vis : tt ) * ) $ name :
+                                              ident : $ prefix : expr => list
+                                              [ $ ty : ty ] ) => {
+                                              $ ( $ vis ) * struct $ name ;
+                                              impl $ name {
+                                              fn clear_item < S : $ crate ::
+                                              HashedStorage < $ crate ::
+                                              Twox128 >> (
+                                              index : u32 , storage : & S ) {
+                                              if index < < $ name as $ crate
+                                              :: storage :: hashed ::
+                                              generator :: StorageList < $ ty
+                                              >> :: len ( storage ) {
+                                              storage . kill (
+                                              & < $ name as $ crate :: storage
+                                              :: hashed :: generator ::
+                                              StorageList < $ ty >> :: key_for
+                                              ( index ) ) ; } } fn set_len < S
+                                              : $ crate :: HashedStorage < $
+                                              crate :: Twox128 >> (
+                                              count : u32 , storage : & S ) {
+                                              (
+                                              count .. < $ name as $ crate ::
+                                              storage :: hashed :: generator
+                                              :: StorageList < $ ty >> :: len
+                                              ( storage ) ) . for_each (
+                                              | i | $ name :: clear_item (
+                                              i , storage ) ) ; storage . put
+                                              (
+                                              & < $ name as $ crate :: storage
+                                              :: hashed :: generator ::
+                                              StorageList < $ ty >> :: len_key
+                                              (  ) , & count ) ; } } impl $
+                                              crate :: storage :: hashed ::
+                                              generator :: StorageList < $ ty
+                                              > for $ name {
+                                              /// Get the prefix key in storage.
+                                               fn prefix (  ) -> & 'static [
+                                              u8 ] { $ prefix }
+                                              /// Get the key used to put the length field.
+                                               fn len_key (  ) -> $ crate ::
+                                              rstd :: vec :: Vec < u8 > {
+                                              let mut key = $ prefix . to_vec
+                                              (  ) ; key . extend ( b"len" ) ;
+                                              key }
+                                              /// Get the storage key used to fetch a value at a given index.
+                                               fn key_for ( index : u32 ) -> $
+                                              crate :: rstd :: vec :: Vec < u8
+                                              > {
+                                              let mut key = $ prefix . to_vec
+                                              (  ) ; $ crate :: codec ::
+                                              Encode :: encode_to (
+                                              & index , & mut key ) ; key }
+                                              /// Read out all the items.
+                                               fn items < S : $ crate ::
+                                              HashedStorage < $ crate ::
+                                              Twox128 >> ( storage : & S ) ->
+                                              $ crate :: rstd :: vec :: Vec <
+                                              $ ty > {
+                                              (
+                                              0 .. < $ name as $ crate ::
+                                              storage :: hashed :: generator
+                                              :: StorageList < $ ty >> :: len
+                                              ( storage ) ) . map (
+                                              | i | < $ name as $ crate ::
+                                              storage :: hashed :: generator
+                                              :: StorageList < $ ty >> :: get
+                                              ( i , storage ) . expect (
+                                              "all items within length are set; qed"
+                                              ) ) . collect (  ) }
+                                              /// Set the current set of items.
+                                               fn set_items < S : $ crate ::
+                                              HashedStorage < $ crate ::
+                                              Twox128 >> (
+                                              items : & [ $ ty ] , storage : &
+                                              S ) {
+                                              $ name :: set_len (
+                                              items . len (  ) as u32 ,
+                                              storage ) ; items . iter (  ) .
+                                              enumerate (  ) . for_each (
+                                              | ( i , item ) | < $ name as $
+                                              crate :: storage :: hashed ::
+                                              generator :: StorageList < $ ty
+                                              >> :: set_item (
+                                              i as u32 , item , storage ) ) ;
+                                              } fn set_item < S : $ crate ::
+                                              HashedStorage < $ crate ::
+                                              Twox128 >> (
+                                              index : u32 , item : & $ ty ,
+                                              storage : & S ) {
+                                              if index < < $ name as $ crate
+                                              :: storage :: hashed ::
+                                              generator :: StorageList < $ ty
+                                              >> :: len ( storage ) {
+                                              storage . put (
+                                              & < $ name as $ crate :: storage
+                                              :: hashed :: generator ::
+                                              StorageList < $ ty >> :: key_for
+                                              ( index ) [ .. ] , item ) ; } }
+                                              /// Load the value at given index. Returns `None` if the index is out-of-bounds.
+                                               fn get < S : $ crate ::
+                                              HashedStorage < $ crate ::
+                                              Twox128 >> (
+                                              index : u32 , storage : & S ) ->
+                                              Option < $ ty > {
+                                              storage . get (
+                                              & < $ name as $ crate :: storage
+                                              :: hashed :: generator ::
+                                              StorageList < $ ty >> :: key_for
+                                              ( index ) [ .. ] ) }
+                                              /// Load the length of the list.
+                                               fn len < S : $ crate ::
+                                              HashedStorage < $ crate ::
+                                              Twox128 >> ( storage : & S ) ->
+                                              u32 {
+                                              storage . get (
+                                              & < $ name as $ crate :: storage
+                                              :: hashed :: generator ::
+                                              StorageList < $ ty >> :: len_key
+                                              (  ) ) . unwrap_or_default (  )
+                                              } /// Clear the list.
+                                               fn clear < S : $ crate ::
+                                              HashedStorage < $ crate ::
+                                              Twox128 >> ( storage : & S ) {
+                                              for i in 0 .. < $ name as $
+                                              crate :: storage :: hashed ::
+                                              generator :: StorageList < $ ty
+                                              >> :: len ( storage ) {
+                                              $ name :: clear_item (
+                                              i , storage ) ; } storage . kill
+                                              (
+                                              & < $ name as $ crate :: storage
+                                              :: hashed :: generator ::
+                                              StorageList < $ ty >> :: len_key
+                                              (  ) [ .. ] ) } } } ;);
+        #[macro_export]
+        #[doc(hidden)]
+        macro_rules! __handle_wrap_internal((
+                                            RAW_TYPE { $ ( $ raw : tt ) * } {
+                                            $ ( $ option : tt ) * } ) => {
+                                            $ ( $ raw ) * ; } ; (
+                                            OPTION_TYPE { $ ( $ raw : tt ) * }
+                                            { $ ( $ option : tt ) * } ) => {
+                                            $ ( $ option ) * ; } ;);
+    }
+    pub mod unhashed {
+        //! Operation on unhashed runtime storage
+        use crate::rstd::borrow::Borrow;
+        use super::{Codec, Encode, Decode, KeyedVec, Vec, IncrementalInput};
+        pub mod generator {
+            use crate::codec;
+            use crate::rstd::vec::Vec;
+            /// Abstraction around storage with unhashed access.
+            pub trait UnhashedStorage {
+                /// true if the key exists in storage.
+                fn exists(&self, key: &[u8])
+                -> bool;
+                /// Load the bytes of a key from storage. Can panic if the type is incorrect.
+                fn get<T: codec::Decode>(&self, key: &[u8])
+                -> Option<T>;
+                /// Load the bytes of a key from storage. Can panic if the type is incorrect. Will panic if
+                /// it's not there.
+                fn require<T: codec::Decode>(&self, key: &[u8]) -> T {
+                    self.get(key).expect("Required values must be in storage")
+                }
+                /// Load the bytes of a key from storage. Can panic if the type is incorrect. The type's
+                /// default is returned if it's not there.
+                fn get_or_default<T: codec::Decode +
+                                  Default>(&self, key: &[u8]) -> T {
+                    self.get(key).unwrap_or_default()
+                }
+                /// Put a value in under a key.
+                fn put<T: codec::Encode>(&self, key: &[u8], val: &T);
+                /// Remove the bytes of a key from storage.
+                fn kill(&self, key: &[u8]);
+                /// Remove the bytes of a key from storage.
+                fn kill_prefix(&self, prefix: &[u8]);
+                /// Take a value from storage, deleting it after reading.
+                fn take<T: codec::Decode>(&self, key: &[u8]) -> Option<T> {
+                    let value = self.get(key);
+                    self.kill(key);
+                    value
+                }
+                /// Take a value from storage, deleting it after reading.
+                fn take_or_panic<T: codec::Decode>(&self, key: &[u8]) -> T {
+                    self.take(key).expect("Required values must be in storage")
+                }
+                /// Take a value from storage, deleting it after reading.
+                fn take_or_default<T: codec::Decode +
+                                   Default>(&self, key: &[u8]) -> T {
+                    self.take(key).unwrap_or_default()
+                }
+                /// Get a Vec of bytes from storage.
+                fn get_raw(&self, key: &[u8])
+                -> Option<Vec<u8>>;
+                /// Put a raw byte slice into storage.
+                fn put_raw(&self, key: &[u8], value: &[u8]);
+            }
+            #[cfg(feature = "std")]
+            impl UnhashedStorage for
+             std::cell::RefCell<&mut sr_primitives::StorageOverlay> {
+                fn exists(&self, key: &[u8]) -> bool {
+                    self.borrow().contains_key(key)
+                }
+                fn get<T: codec::Decode>(&self, key: &[u8]) -> Option<T> {
+                    self.borrow().get(key).map(|x|
+                                                   codec::Decode::decode(&mut x.as_slice()).expect("Unable to decode expected type."))
+                }
+                fn put<T: codec::Encode>(&self, key: &[u8], val: &T) {
+                    self.borrow_mut().insert(key.to_vec(),
+                                             codec::Encode::encode(val));
+                }
+                fn kill(&self, key: &[u8]) { self.borrow_mut().remove(key); }
+                fn kill_prefix(&self, prefix: &[u8]) {
+                    self.borrow_mut().retain(|key, _|
+                                                 { !key.starts_with(prefix) })
+                }
+                fn get_raw(&self, key: &[u8]) -> Option<Vec<u8>> {
+                    self.borrow().get(key).cloned()
+                }
+                fn put_raw(&self, key: &[u8], value: &[u8]) {
+                    self.borrow_mut().insert(key.to_vec(), value.to_vec());
+                }
+            }
+            /// An implementation of a map with a two keys.
+            ///
+            /// It provides an important ability to efficiently remove all entries
+            /// that have a common first key.
+            ///
+            /// # Mapping of keys to a storage path
+            ///
+            /// The storage key (i.e. the key under which the `Value` will be stored) is created from two parts.
+            /// The first part is a hash of a concatenation of the `PREFIX` and `Key1`. And the second part
+            /// is a hash of a `Key2`.
+            ///
+            /// /!\ be careful while choosing the Hash, indeed malicious could craft second keys to lower the trie.
+            pub trait StorageDoubleMap<K1: codec::Codec, K2: codec::Codec,
+                                       V: codec::Codec> {
+                /// The type that get/take returns.
+                type
+                Query;
+                /// Get the prefix key in storage.
+                fn prefix()
+                -> &'static [u8];
+                /// Get the storage key used to fetch a value corresponding to a specific key.
+                fn key_for(k1: &K1, k2: &K2)
+                -> Vec<u8>;
+                /// Get the storage prefix used to fetch keys corresponding to a specific key1.
+                fn prefix_for(k1: &K1)
+                -> Vec<u8>;
+                /// true if the value is defined in storage.
+                fn exists<S: UnhashedStorage>(k1: &K1, k2: &K2, storage: &S)
+                 -> bool {
+                    storage.exists(&Self::key_for(k1, k2))
+                }
+                /// Load the value associated with the given key from the map.
+                fn get<S: UnhashedStorage>(k1: &K1, k2: &K2, storage: &S)
+                -> Self::Query;
+                /// Take the value under a key.
+                fn take<S: UnhashedStorage>(k1: &K1, k2: &K2, storage: &S)
+                -> Self::Query;
+                /// Store a value to be associated with the given key from the map.
+                fn insert<S: UnhashedStorage>(k1: &K1, k2: &K2, val: &V,
+                                              storage: &S) {
+                    storage.put(&Self::key_for(k1, k2), val);
+                }
+                /// Remove the value under a key.
+                fn remove<S: UnhashedStorage>(k1: &K1, k2: &K2, storage: &S) {
+                    storage.kill(&Self::key_for(k1, k2));
+                }
+                /// Removes all entries that shares the `k1` as the first key.
+                fn remove_prefix<S: UnhashedStorage>(k1: &K1, storage: &S) {
+                    storage.kill_prefix(&Self::prefix_for(k1));
+                }
+                /// Mutate the value under a key.
+                fn mutate<R, F: FnOnce(&mut Self::Query) -> R,
+                          S: UnhashedStorage>(k1: &K1, k2: &K2, f: F,
+                                              storage: &S)
+                -> R;
+                /// Append the given items to the value under the key specified.
+                fn append<I,
+                          S: UnhashedStorage>(k1: &K1, k2: &K2, items: &[I],
+                                              storage: &S)
+                 -> Result<(), &'static str> where I: codec::Encode,
+                 V: codec::EncodeAppend<Item = I> {
+                    let key = Self::key_for(k1, k2);
+                    let new_val =
+                        <V as
+                            codec::EncodeAppend>::append(storage.get_raw(&key).unwrap_or_default(),
+                                                         items).ok_or_else(||
+                                                                               "Could not append given item")?;
+                    storage.put_raw(&key, &new_val);
+                    Ok(())
+                }
+            }
+        }
+        /// Return the value of the item in storage under `key`, or `None` if there is no explicit entry.
+        pub fn get<T: Decode + Sized>(key: &[u8]) -> Option<T> {
+            runtime_io::read_storage(key, &mut [0; 0][..],
+                                     0).map(|_|
+                                                {
+                                                    let mut input =
+                                                        IncrementalInput{key,
+                                                                         pos:
+                                                                             0,};
+                                                    Decode::decode(&mut input).expect("storage is not null, therefore must be a valid type")
+                                                })
+        }
+        /// Return the value of the item in storage under `key`, or the type's default if there is no
+        /// explicit entry.
+        pub fn get_or_default<T: Decode + Sized + Default>(key: &[u8]) -> T {
+            get(key).unwrap_or_else(Default::default)
+        }
+        /// Return the value of the item in storage under `key`, or `default_value` if there is no
+        /// explicit entry.
+        pub fn get_or<T: Decode + Sized>(key: &[u8], default_value: T) -> T {
+            get(key).unwrap_or(default_value)
+        }
+        /// Return the value of the item in storage under `key`, or `default_value()` if there is no
+        /// explicit entry.
+        pub fn get_or_else<T: Decode + Sized, F: FnOnce() ->
+                           T>(key: &[u8], default_value: F) -> T {
+            get(key).unwrap_or_else(default_value)
+        }
+        /// Put `value` in storage under `key`.
+        pub fn put<T: Encode>(key: &[u8], value: &T) {
+            value.using_encoded(|slice| runtime_io::set_storage(key, slice));
+        }
+        /// Remove `key` from storage, returning its value if it had an explicit entry or `None` otherwise.
+        pub fn take<T: Decode + Sized>(key: &[u8]) -> Option<T> {
+            let r = get(key);
+            if r.is_some() { kill(key); }
+            r
+        }
+        /// Remove `key` from storage, returning its value, or, if there was no explicit entry in storage,
+        /// the default for its type.
+        pub fn take_or_default<T: Decode + Sized + Default>(key: &[u8]) -> T {
+            take(key).unwrap_or_else(Default::default)
+        }
+        /// Return the value of the item in storage under `key`, or `default_value` if there is no
+        /// explicit entry. Ensure there is no explicit entry on return.
+        pub fn take_or<T: Decode + Sized>(key: &[u8], default_value: T) -> T {
+            take(key).unwrap_or(default_value)
+        }
+        /// Return the value of the item in storage under `key`, or `default_value()` if there is no
+        /// explicit entry. Ensure there is no explicit entry on return.
+        pub fn take_or_else<T: Decode + Sized, F: FnOnce() ->
+                            T>(key: &[u8], default_value: F) -> T {
+            take(key).unwrap_or_else(default_value)
+        }
+        /// Check to see if `key` has an explicit entry in storage.
+        pub fn exists(key: &[u8]) -> bool {
+            runtime_io::read_storage(key, &mut [0; 0][..], 0).is_some()
+        }
+        /// Ensure `key` has no explicit entry in storage.
+        pub fn kill(key: &[u8]) { runtime_io::clear_storage(key); }
+        /// Ensure keys with the given `prefix` have no entries in storage.
+        pub fn kill_prefix(prefix: &[u8]) {
+            runtime_io::clear_prefix(prefix);
+        }
+        /// Get a Vec of bytes from storage.
+        pub fn get_raw(key: &[u8]) -> Option<Vec<u8>> {
+            runtime_io::storage(key)
+        }
+        /// Put a raw byte slice into storage.
+        pub fn put_raw(key: &[u8], value: &[u8]) {
+            runtime_io::set_storage(key, value)
+        }
+        /// A trait to conveniently store a vector of storable data.
+        pub trait StorageVec {
+            type
+            Item: Default +
+            Sized +
+            Codec;
+            const
+            PREFIX:
+            &'static [u8];
+            /// Get the current set of items.
+            fn items() -> Vec<Self::Item> {
+                (0..Self::count()).into_iter().map(Self::item).collect()
+            }
+            /// Set the current set of items.
+            fn set_items<I, T>(items: I) where I: IntoIterator<Item = T>,
+             T: Borrow<Self::Item> {
+                let mut count: u32 = 0;
+                for i in items.into_iter() {
+                    put(&count.to_keyed_vec(Self::PREFIX), i.borrow());
+                    count =
+                        count.checked_add(1).expect("exceeded runtime storage capacity");
+                }
+                Self::set_count(count);
+            }
+            fn set_item(index: u32, item: &Self::Item) {
+                if index < Self::count() {
+                    put(&index.to_keyed_vec(Self::PREFIX), item);
+                }
+            }
+            fn clear_item(index: u32) {
+                if index < Self::count() {
+                    kill(&index.to_keyed_vec(Self::PREFIX));
+                }
+            }
+            fn item(index: u32) -> Self::Item {
+                get_or_default(&index.to_keyed_vec(Self::PREFIX))
+            }
+            fn set_count(count: u32) {
+                (count..Self::count()).for_each(Self::clear_item);
+                put(&b"len".to_keyed_vec(Self::PREFIX), &count);
+            }
+            fn count() -> u32 {
+                get_or_default(&b"len".to_keyed_vec(Self::PREFIX))
+            }
+        }
+    }
+    pub mod hashed {
+        //! Operation on runtime storage using hashed keys.
+        pub mod generator {
+            //! Abstract storage to use on HashedStorage trait
+            use crate::codec;
+            use crate::rstd::prelude::{Vec, Box};
+            #[cfg(feature = "std")]
+            use crate::storage::unhashed::generator::UnhashedStorage;
+            use runtime_io::{twox_64, twox_128, blake2_128, twox_256,
+                             blake2_256};
+            pub trait StorageHasher: 'static {
+                type
+                Output: AsRef<[u8]>;
+                fn hash(x: &[u8])
+                -> Self::Output;
+            }
+            /// Hash storage keys with `concat(twox128(key), key)`
+            pub struct Twox64Concat;
+            impl StorageHasher for Twox64Concat {
+                type
+                Output
+                =
+                Vec<u8>;
+                fn hash(x: &[u8]) -> Vec<u8> {
+                    twox_64(x).into_iter().chain(x.into_iter()).cloned().collect::<Vec<_>>()
+                }
+            }
+            /// Hash storage keys with blake2 128
+            pub struct Blake2_128;
+            impl StorageHasher for Blake2_128 {
+                type
+                Output
+                =
+                [u8; 16];
+                fn hash(x: &[u8]) -> [u8; 16] { blake2_128(x) }
+            }
+            /// Hash storage keys with blake2 256
+            pub struct Blake2_256;
+            impl StorageHasher for Blake2_256 {
+                type
+                Output
+                =
+                [u8; 32];
+                fn hash(x: &[u8]) -> [u8; 32] { blake2_256(x) }
+            }
+            /// Hash storage keys with twox 128
+            pub struct Twox128;
+            impl StorageHasher for Twox128 {
+                type
+                Output
+                =
+                [u8; 16];
+                fn hash(x: &[u8]) -> [u8; 16] { twox_128(x) }
+            }
+            /// Hash storage keys with twox 256
+            pub struct Twox256;
+            impl StorageHasher for Twox256 {
+                type
+                Output
+                =
+                [u8; 32];
+                fn hash(x: &[u8]) -> [u8; 32] { twox_256(x) }
+            }
+            /// Abstraction around storage.
+            pub trait HashedStorage<H: StorageHasher> {
+                /// true if the key exists in storage.
+                fn exists(&self, key: &[u8])
+                -> bool;
+                /// Load the bytes of a key from storage. Can panic if the type is incorrect.
+                fn get<T: codec::Decode>(&self, key: &[u8])
+                -> Option<T>;
+                /// Load the bytes of a key from storage. Can panic if the type is incorrect. Will panic if
+                /// it's not there.
+                fn require<T: codec::Decode>(&self, key: &[u8]) -> T {
+                    self.get(key).expect("Required values must be in storage")
+                }
+                /// Load the bytes of a key from storage. Can panic if the type is incorrect. The type's
+                /// default is returned if it's not there.
+                fn get_or_default<T: codec::Decode +
+                                  Default>(&self, key: &[u8]) -> T {
+                    self.get(key).unwrap_or_default()
+                }
+                /// Put a value in under a key.
+                fn put<T: codec::Encode>(&self, key: &[u8], val: &T);
+                /// Remove the bytes of a key from storage.
+                fn kill(&self, key: &[u8]);
+                /// Take a value from storage, deleting it after reading.
+                fn take<T: codec::Decode>(&self, key: &[u8]) -> Option<T> {
+                    let value = self.get(key);
+                    self.kill(key);
+                    value
+                }
+                /// Take a value from storage, deleting it after reading.
+                fn take_or_panic<T: codec::Decode>(&self, key: &[u8]) -> T {
+                    self.take(key).expect("Required values must be in storage")
+                }
+                /// Take a value from storage, deleting it after reading.
+                fn take_or_default<T: codec::Decode +
+                                   Default>(&self, key: &[u8]) -> T {
+                    self.take(key).unwrap_or_default()
+                }
+                /// Get a Vec of bytes from storage.
+                fn get_raw(&self, key: &[u8])
+                -> Option<Vec<u8>>;
+                /// Put a raw byte slice into storage.
+                fn put_raw(&self, key: &[u8], value: &[u8]);
+            }
+            #[cfg(feature = "std")]
+            impl <H: StorageHasher> HashedStorage<H> for
+             std::cell::RefCell<&mut sr_primitives::StorageOverlay> {
+                fn exists(&self, key: &[u8]) -> bool {
+                    UnhashedStorage::exists(self, &H::hash(key).as_ref())
+                }
+                fn get<T: codec::Decode>(&self, key: &[u8]) -> Option<T> {
+                    UnhashedStorage::get(self, &H::hash(key).as_ref())
+                }
+                fn put<T: codec::Encode>(&self, key: &[u8], val: &T) {
+                    UnhashedStorage::put(self, &H::hash(key).as_ref(), val)
+                }
+                fn kill(&self, key: &[u8]) {
+                    UnhashedStorage::kill(self, &H::hash(key).as_ref())
+                }
+                fn get_raw(&self, key: &[u8]) -> Option<Vec<u8>> {
+                    UnhashedStorage::get_raw(self, &H::hash(key).as_ref())
+                }
+                fn put_raw(&self, key: &[u8], value: &[u8]) {
+                    UnhashedStorage::put_raw(self, &H::hash(key).as_ref(),
+                                             value)
+                }
+            }
+            /// A strongly-typed value kept in storage.
+            pub trait StorageValue<T: codec::Codec> {
+                /// The type that get/take returns.
+                type
+                Query;
+                /// Get the storage key.
+                fn key()
+                -> &'static [u8];
+                /// true if the value is defined in storage.
+                fn exists<S: HashedStorage<Twox128>>(storage: &S) -> bool {
+                    storage.exists(Self::key())
+                }
+                /// Load the value from the provided storage instance.
+                fn get<S: HashedStorage<Twox128>>(storage: &S)
+                -> Self::Query;
+                /// Take a value from storage, removing it afterwards.
+                fn take<S: HashedStorage<Twox128>>(storage: &S)
+                -> Self::Query;
+                /// Store a value under this key into the provided storage instance.
+                fn put<S: HashedStorage<Twox128>>(val: &T, storage: &S) {
+                    storage.put(Self::key(), val)
+                }
+                /// Mutate this value
+                fn mutate<R, F: FnOnce(&mut Self::Query) -> R,
+                          S: HashedStorage<Twox128>>(f: F, storage: &S)
+                -> R;
+                /// Clear the storage value.
+                fn kill<S: HashedStorage<Twox128>>(storage: &S) {
+                    storage.kill(Self::key())
+                }
+                /// Append the given items to the value in the storage.
+                ///
+                /// `T` is required to implement `codec::EncodeAppend`.
+                fn append<S: HashedStorage<Twox128>,
+                          I: codec::Encode>(items: &[I], storage: &S)
+                 -> Result<(), &'static str> where T: codec::EncodeAppend<Item
+                 = I> {
+                    let new_val =
+                        <T as
+                            codec::EncodeAppend>::append(storage.get_raw(Self::key()).unwrap_or_default(),
+                                                         items).ok_or_else(||
+                                                                               "Could not append given item")?;
+                    storage.put_raw(Self::key(), &new_val);
+                    Ok(())
+                }
+            }
+            /// A strongly-typed list in storage.
+            pub trait StorageList<T: codec::Codec> {
+                /// Get the prefix key in storage.
+                fn prefix()
+                -> &'static [u8];
+                /// Get the key used to put the length field.
+                fn len_key()
+                -> Vec<u8>;
+                /// Get the storage key used to fetch a value at a given index.
+                fn key_for(index: u32)
+                -> Vec<u8>;
+                /// Read out all the items.
+                fn items<S: HashedStorage<Twox128>>(storage: &S)
+                -> Vec<T>;
+                /// Set the current set of items.
+                fn set_items<S: HashedStorage<Twox128>>(items: &[T],
+                                                        storage: &S);
+                /// Set the item at the given index.
+                fn set_item<S: HashedStorage<Twox128>>(index: u32, item: &T,
+                                                       storage: &S);
+                /// Load the value at given index. Returns `None` if the index is out-of-bounds.
+                fn get<S: HashedStorage<Twox128>>(index: u32, storage: &S)
+                -> Option<T>;
+                /// Load the length of the list
+                fn len<S: HashedStorage<Twox128>>(storage: &S)
+                -> u32;
+                /// Clear the list.
+                fn clear<S: HashedStorage<Twox128>>(storage: &S);
+            }
+            /// A strongly-typed map in storage.
+            pub trait StorageMap<K: codec::Codec, V: codec::Codec> {
+                /// The type that get/take returns.
+                type
+                Query;
+                type
+                Hasher: StorageHasher;
+                /// Get the prefix key in storage.
+                fn prefix()
+                -> &'static [u8];
+                /// Get the storage key used to fetch a value corresponding to a specific key.
+                fn key_for(x: &K)
+                -> Vec<u8>;
+                /// true if the value is defined in storage.
+                fn exists<S: HashedStorage<Self::Hasher>>(key: &K,
+                                                          storage: &S)
+                 -> bool {
+                    storage.exists(&Self::key_for(key)[..])
+                }
+                /// Load the value associated with the given key from the map.
+                fn get<S: HashedStorage<Self::Hasher>>(key: &K, storage: &S)
+                -> Self::Query;
+                /// Take the value under a key.
+                fn take<S: HashedStorage<Self::Hasher>>(key: &K, storage: &S)
+                -> Self::Query;
+                /// Store a value to be associated with the given key from the map.
+                fn insert<S: HashedStorage<Self::Hasher>>(key: &K, val: &V,
+                                                          storage: &S) {
+                    storage.put(&Self::key_for(key)[..], val);
+                }
+                /// Remove the value under a key.
+                fn remove<S: HashedStorage<Self::Hasher>>(key: &K,
+                                                          storage: &S) {
+                    storage.kill(&Self::key_for(key)[..]);
+                }
+                /// Mutate the value under a key.
+                fn mutate<R, F: FnOnce(&mut Self::Query) -> R,
+                          S: HashedStorage<Self::Hasher>>(key: &K, f: F,
+                                                          storage: &S)
+                -> R;
+            }
+            /// A `StorageMap` with enumerable entries.
+            pub trait EnumerableStorageMap<K: codec::Codec,
+                                           V: codec::Codec>: StorageMap<K,
+                                                                        V> {
+                /// Return current head element.
+                fn head<S: HashedStorage<Self::Hasher>>(storage: &S)
+                -> Option<K>;
+                /// Enumerate all elements in the map.
+                fn enumerate<'a,
+                             S: HashedStorage<Self::Hasher>>(storage: &'a S)
+                -> Box<dyn Iterator<Item = (K, V)> + 'a>
+                where
+                K: 'a,
+                V: 'a;
+            }
+        }
+        use super::unhashed;
+        use crate::rstd::prelude::*;
+        use crate::rstd::borrow::Borrow;
+        use runtime_io::{self, twox_128};
+        use crate::codec::{Codec, Encode, Decode, KeyedVec};
+        /// Return the value of the item in storage under `key`, or `None` if there is no explicit entry.
+        pub fn get<T: Decode + Sized, HashFn: Fn(&[u8]) -> R,
+                   R: AsRef<[u8]>>(hash: &HashFn, key: &[u8]) -> Option<T> {
+            unhashed::get(&hash(key).as_ref())
+        }
+        /// Return the value of the item in storage under `key`, or the type's default if there is no
+        /// explicit entry.
+        pub fn get_or_default<T: Decode + Sized + Default, HashFn: Fn(&[u8])
+                              -> R, R: AsRef<[u8]>>(hash: &HashFn, key: &[u8])
+         -> T {
+            unhashed::get_or_default(&hash(key).as_ref())
+        }
+        /// Return the value of the item in storage under `key`, or `default_value` if there is no
+        /// explicit entry.
+        pub fn get_or<T: Decode + Sized, HashFn: Fn(&[u8]) -> R,
+                      R: AsRef<[u8]>>(hash: &HashFn, key: &[u8],
+                                      default_value: T) -> T {
+            unhashed::get_or(&hash(key).as_ref(), default_value)
+        }
+        /// Return the value of the item in storage under `key`, or `default_value()` if there is no
+        /// explicit entry.
+        pub fn get_or_else<T: Decode + Sized, F: FnOnce() -> T,
+                           HashFn: Fn(&[u8]) -> R,
+                           R: AsRef<[u8]>>(hash: &HashFn, key: &[u8],
+                                           default_value: F) -> T {
+            unhashed::get_or_else(&hash(key).as_ref(), default_value)
+        }
+        /// Put `value` in storage under `key`.
+        pub fn put<T: Encode, HashFn: Fn(&[u8]) -> R,
+                   R: AsRef<[u8]>>(hash: &HashFn, key: &[u8], value: &T) {
+            unhashed::put(&hash(key).as_ref(), value)
+        }
+        /// Remove `key` from storage, returning its value if it had an explicit entry or `None` otherwise.
+        pub fn take<T: Decode + Sized, HashFn: Fn(&[u8]) -> R,
+                    R: AsRef<[u8]>>(hash: &HashFn, key: &[u8]) -> Option<T> {
+            unhashed::take(&hash(key).as_ref())
+        }
+        /// Remove `key` from storage, returning its value, or, if there was no explicit entry in storage,
+        /// the default for its type.
+        pub fn take_or_default<T: Decode + Sized + Default, HashFn: Fn(&[u8])
+                               -> R,
+                               R: AsRef<[u8]>>(hash: &HashFn, key: &[u8])
+         -> T {
+            unhashed::take_or_default(&hash(key).as_ref())
+        }
+        /// Return the value of the item in storage under `key`, or `default_value` if there is no
+        /// explicit entry. Ensure there is no explicit entry on return.
+        pub fn take_or<T: Decode + Sized, HashFn: Fn(&[u8]) -> R,
+                       R: AsRef<[u8]>>(hash: &HashFn, key: &[u8],
+                                       default_value: T) -> T {
+            unhashed::take_or(&hash(key).as_ref(), default_value)
+        }
+        /// Return the value of the item in storage under `key`, or `default_value()` if there is no
+        /// explicit entry. Ensure there is no explicit entry on return.
+        pub fn take_or_else<T: Decode + Sized, F: FnOnce() -> T,
+                            HashFn: Fn(&[u8]) -> R,
+                            R: AsRef<[u8]>>(hash: &HashFn, key: &[u8],
+                                            default_value: F) -> T {
+            unhashed::take_or_else(&hash(key).as_ref(), default_value)
+        }
+        /// Check to see if `key` has an explicit entry in storage.
+        pub fn exists<HashFn: Fn(&[u8]) -> R,
+                      R: AsRef<[u8]>>(hash: &HashFn, key: &[u8]) -> bool {
+            unhashed::exists(&hash(key).as_ref())
+        }
+        /// Ensure `key` has no explicit entry in storage.
+        pub fn kill<HashFn: Fn(&[u8]) -> R,
+                    R: AsRef<[u8]>>(hash: &HashFn, key: &[u8]) {
+            unhashed::kill(&hash(key).as_ref())
+        }
+        /// Get a Vec of bytes from storage.
+        pub fn get_raw<HashFn: Fn(&[u8]) -> R,
+                       R: AsRef<[u8]>>(hash: &HashFn, key: &[u8])
+         -> Option<Vec<u8>> {
+            unhashed::get_raw(&hash(key).as_ref())
+        }
+        /// Put a raw byte slice into storage.
+        pub fn put_raw<HashFn: Fn(&[u8]) -> R,
+                       R: AsRef<[u8]>>(hash: &HashFn, key: &[u8],
+                                       value: &[u8]) {
+            unhashed::put_raw(&hash(key).as_ref(), value)
+        }
+        /// A trait to conveniently store a vector of storable data.
+        ///
+        /// It uses twox_128 hasher. Final keys in trie are `twox_128(concatenation(PREFIX,count))`
+        pub trait StorageVec {
+            type
+            Item: Default +
+            Sized +
+            Codec;
+            const
+            PREFIX:
+            &'static [u8];
+            /// Get the current set of items.
+            fn items() -> Vec<Self::Item> {
+                (0..Self::count()).into_iter().map(Self::item).collect()
+            }
+            /// Set the current set of items.
+            fn set_items<I, T>(items: I) where I: IntoIterator<Item = T>,
+             T: Borrow<Self::Item> {
+                let mut count: u32 = 0;
+                for i in items.into_iter() {
+                    put(&twox_128, &count.to_keyed_vec(Self::PREFIX),
+                        i.borrow());
+                    count =
+                        count.checked_add(1).expect("exceeded runtime storage capacity");
+                }
+                Self::set_count(count);
+            }
+            /// Push an item.
+            fn push(item: &Self::Item) {
+                let len = Self::count();
+                put(&twox_128, &len.to_keyed_vec(Self::PREFIX), item);
+                Self::set_count(len + 1);
+            }
+            fn set_item(index: u32, item: &Self::Item) {
+                if index < Self::count() {
+                    put(&twox_128, &index.to_keyed_vec(Self::PREFIX), item);
+                }
+            }
+            fn clear_item(index: u32) {
+                if index < Self::count() {
+                    kill(&twox_128, &index.to_keyed_vec(Self::PREFIX));
+                }
+            }
+            fn item(index: u32) -> Self::Item {
+                get_or_default(&twox_128, &index.to_keyed_vec(Self::PREFIX))
+            }
+            fn set_count(count: u32) {
+                (count..Self::count()).for_each(Self::clear_item);
+                put(&twox_128, &b"len".to_keyed_vec(Self::PREFIX), &count);
+            }
+            fn count() -> u32 {
+                get_or_default(&twox_128, &b"len".to_keyed_vec(Self::PREFIX))
+            }
+        }
+    }
+    struct IncrementalInput<'a> {
+        key: &'a [u8],
+        pos: usize,
+    }
+    impl <'a> Input for IncrementalInput<'a> {
+        fn read(&mut self, into: &mut [u8]) -> usize {
+            let len =
+                runtime_io::read_storage(self.key, into,
+                                         self.pos).unwrap_or(0);
+            let read = crate::rstd::cmp::min(len, into.len());
+            self.pos += read;
+            read
+        }
+    }
+    struct IncrementalChildInput<'a> {
+        storage_key: &'a [u8],
+        key: &'a [u8],
+        pos: usize,
+    }
+    impl <'a> Input for IncrementalChildInput<'a> {
+        fn read(&mut self, into: &mut [u8]) -> usize {
+            let len =
+                runtime_io::read_child_storage(self.storage_key, self.key,
+                                               into, self.pos).unwrap_or(0);
+            let read = crate::rstd::cmp::min(len, into.len());
+            self.pos += read;
+            read
+        }
+    }
+    /// The underlying runtime storage.
+    pub struct RuntimeStorage;
+    impl <H: StorageHasher> HashedStorage<H> for RuntimeStorage {
+        fn exists(&self, key: &[u8]) -> bool { hashed::exists(&H::hash, key) }
+        /// Load the bytes of a key from storage. Can panic if the type is incorrect.
+        fn get<T: Decode>(&self, key: &[u8]) -> Option<T> {
+            hashed::get(&H::hash, key)
+        }
+        /// Put a value in under a key.
+        fn put<T: Encode>(&self, key: &[u8], val: &T) {
+            hashed::put(&H::hash, key, val)
+        }
+        /// Remove the bytes of a key from storage.
+        fn kill(&self, key: &[u8]) { hashed::kill(&H::hash, key) }
+        /// Take a value from storage, deleting it after reading.
+        fn take<T: Decode>(&self, key: &[u8]) -> Option<T> {
+            hashed::take(&H::hash, key)
+        }
+        fn get_raw(&self, key: &[u8]) -> Option<Vec<u8>> {
+            hashed::get_raw(&H::hash, key)
+        }
+        fn put_raw(&self, key: &[u8], value: &[u8]) {
+            hashed::put_raw(&H::hash, key, value)
+        }
+    }
+    impl UnhashedStorage for RuntimeStorage {
+        fn exists(&self, key: &[u8]) -> bool { unhashed::exists(key) }
+        /// Load the bytes of a key from storage. Can panic if the type is incorrect.
+        fn get<T: Decode>(&self, key: &[u8]) -> Option<T> {
+            unhashed::get(key)
+        }
+        /// Put a value in under a key.
+        fn put<T: Encode>(&self, key: &[u8], val: &T) {
+            unhashed::put(key, val)
+        }
+        /// Remove the bytes of a key from storage.
+        fn kill(&self, key: &[u8]) { unhashed::kill(key) }
+        /// Remove the bytes of a key from storage.
+        fn kill_prefix(&self, prefix: &[u8]) { unhashed::kill_prefix(prefix) }
+        /// Take a value from storage, deleting it after reading.
+        fn take<T: Decode>(&self, key: &[u8]) -> Option<T> {
+            unhashed::take(key)
+        }
+        fn get_raw(&self, key: &[u8]) -> Option<Vec<u8>> {
+            unhashed::get_raw(key)
+        }
+        fn put_raw(&self, key: &[u8], value: &[u8]) {
+            unhashed::put_raw(key, value)
+        }
+    }
+    /// A trait for working with macro-generated storage values under the substrate storage API.
+    pub trait StorageValue<T: Codec> {
+        /// The type that get/take return.
+        type
+        Query;
+        /// Get the storage key.
+        fn key()
+        -> &'static [u8];
+        /// Does the value (explicitly) exist in storage?
+        fn exists()
+        -> bool;
+        /// Load the value from the provided storage instance.
+        fn get()
+        -> Self::Query;
+        /// Store a value under this key into the provided storage instance.
+        fn put<Arg: Borrow<T>>(val: Arg);
+        /// Mutate the value
+        fn mutate<R, F: FnOnce(&mut Self::Query) -> R>(f: F)
+        -> R;
+        /// Clear the storage value.
+        fn kill();
+        /// Take a value from storage, removing it afterwards.
+        fn take()
+        -> Self::Query;
+        /// Append the given item to the value in the storage.
+        ///
+        /// `T` is required to implement `codec::EncodeAppend`.
+        fn append<I: Encode>(items: &[I])
+        -> Result<(), &'static str>
+        where
+        T: EncodeAppend<Item
+        =
+        I>;
+    }
+    impl <T: Codec, U> StorageValue<T> for U where
+     U: hashed::generator::StorageValue<T> {
+        type
+        Query
+        =
+        U::Query;
+        fn key() -> &'static [u8] {
+            <U as hashed::generator::StorageValue<T>>::key()
+        }
+        fn exists() -> bool { U::exists(&RuntimeStorage) }
+        fn get() -> Self::Query { U::get(&RuntimeStorage) }
+        fn put<Arg: Borrow<T>>(val: Arg) {
+            U::put(val.borrow(), &RuntimeStorage)
+        }
+        fn mutate<R, F: FnOnce(&mut Self::Query) -> R>(f: F) -> R {
+            U::mutate(f, &RuntimeStorage)
+        }
+        fn kill() { U::kill(&RuntimeStorage) }
+        fn take() -> Self::Query { U::take(&RuntimeStorage) }
+        fn append<I: Encode>(items: &[I]) -> Result<(), &'static str> where
+         T: EncodeAppend<Item = I> {
+            U::append(items, &RuntimeStorage)
+        }
+    }
+    /// A strongly-typed list in storage.
+    pub trait StorageList<T: Codec> {
+        /// Get the prefix key in storage.
+        fn prefix()
+        -> &'static [u8];
+        /// Get the key used to store the length field.
+        fn len_key()
+        -> Vec<u8>;
+        /// Get the storage key used to fetch a value at a given index.
+        fn key_for(index: u32)
+        -> Vec<u8>;
+        /// Read out all the items.
+        fn items()
+        -> Vec<T>;
+        /// Set the current set of items.
+        fn set_items(items: &[T]);
+        /// Set the item at the given index.
+        fn set_item<Arg: Borrow<T>>(index: u32, val: Arg);
+        /// Load the value at given index. Returns `None` if the index is out-of-bounds.
+        fn get(index: u32)
+        -> Option<T>;
+        /// Load the length of the list
+        fn len()
+        -> u32;
+        /// Clear the list.
+        fn clear();
+    }
+    impl <T: Codec, U> StorageList<T> for U where
+     U: hashed::generator::StorageList<T> {
+        fn prefix() -> &'static [u8] {
+            <U as hashed::generator::StorageList<T>>::prefix()
+        }
+        fn len_key() -> Vec<u8> {
+            <U as hashed::generator::StorageList<T>>::len_key()
+        }
+        fn key_for(index: u32) -> Vec<u8> {
+            <U as hashed::generator::StorageList<T>>::key_for(index)
+        }
+        fn items() -> Vec<T> { U::items(&RuntimeStorage) }
+        fn set_items(items: &[T]) { U::set_items(items, &RuntimeStorage) }
+        fn set_item<Arg: Borrow<T>>(index: u32, val: Arg) {
+            U::set_item(index, val.borrow(), &RuntimeStorage)
+        }
+        fn get(index: u32) -> Option<T> { U::get(index, &RuntimeStorage) }
+        fn len() -> u32 { U::len(&RuntimeStorage) }
+        fn clear() { U::clear(&RuntimeStorage) }
+    }
+    /// A strongly-typed map in storage.
+    pub trait StorageMap<K: Codec, V: Codec> {
+        /// The type that get/take return.
+        type
+        Query;
+        /// Get the prefix key in storage.
+        fn prefix()
+        -> &'static [u8];
+        /// Get the storage key used to fetch a value corresponding to a specific key.
+        fn key_for<KeyArg: Borrow<K>>(key: KeyArg)
+        -> Vec<u8>;
+        /// Does the value (explicitly) exist in storage?
+        fn exists<KeyArg: Borrow<K>>(key: KeyArg)
+        -> bool;
+        /// Load the value associated with the given key from the map.
+        fn get<KeyArg: Borrow<K>>(key: KeyArg)
+        -> Self::Query;
+        /// Store a value to be associated with the given key from the map.
+        fn insert<KeyArg: Borrow<K>,
+                  ValArg: Borrow<V>>(key: KeyArg, val: ValArg);
+        /// Remove the value under a key.
+        fn remove<KeyArg: Borrow<K>>(key: KeyArg);
+        /// Mutate the value under a key.
+        fn mutate<KeyArg: Borrow<K>, R, F: FnOnce(&mut Self::Query) ->
+                  R>(key: KeyArg, f: F)
+        -> R;
+        /// Take the value under a key.
+        fn take<KeyArg: Borrow<K>>(key: KeyArg)
+        -> Self::Query;
+    }
+    impl <K: Codec, V: Codec, U> StorageMap<K, V> for U where
+     U: hashed::generator::StorageMap<K, V> {
+        type
+        Query
+        =
+        U::Query;
+        fn prefix() -> &'static [u8] {
+            <U as hashed::generator::StorageMap<K, V>>::prefix()
+        }
+        fn key_for<KeyArg: Borrow<K>>(key: KeyArg) -> Vec<u8> {
+            <U as hashed::generator::StorageMap<K, V>>::key_for(key.borrow())
+        }
+        fn exists<KeyArg: Borrow<K>>(key: KeyArg) -> bool {
+            U::exists(key.borrow(), &RuntimeStorage)
+        }
+        fn get<KeyArg: Borrow<K>>(key: KeyArg) -> Self::Query {
+            U::get(key.borrow(), &RuntimeStorage)
+        }
+        fn insert<KeyArg: Borrow<K>,
+                  ValArg: Borrow<V>>(key: KeyArg, val: ValArg) {
+            U::insert(key.borrow(), val.borrow(), &RuntimeStorage)
+        }
+        fn remove<KeyArg: Borrow<K>>(key: KeyArg) {
+            U::remove(key.borrow(), &RuntimeStorage)
+        }
+        fn mutate<KeyArg: Borrow<K>, R, F: FnOnce(&mut Self::Query) ->
+                  R>(key: KeyArg, f: F) -> R {
+            U::mutate(key.borrow(), f, &RuntimeStorage)
+        }
+        fn take<KeyArg: Borrow<K>>(key: KeyArg) -> Self::Query {
+            U::take(key.borrow(), &RuntimeStorage)
+        }
+    }
+    /// A storage map that can be enumerated.
+    ///
+    /// Primarily useful for off-chain computations.
+    /// Runtime implementors should avoid enumerating storage entries on-chain.
+    pub trait EnumerableStorageMap<K: Codec, V: Codec>: StorageMap<K, V> {
+        /// Return current head element.
+        fn head()
+        -> Option<K>;
+        /// Enumerate all elements in the map.
+        fn enumerate()
+        -> Box<dyn Iterator<Item = (K, V)>>
+        where
+        K: 'static,
+        V: 'static;
+    }
+    impl <K: Codec, V: Codec, U> EnumerableStorageMap<K, V> for U where
+     U: hashed::generator::EnumerableStorageMap<K, V> {
+        fn head() -> Option<K> {
+            <U as
+                hashed::generator::EnumerableStorageMap<K,
+                                                        V>>::head(&RuntimeStorage)
+        }
+        fn enumerate() -> Box<dyn Iterator<Item = (K, V)>> where K: 'static,
+         V: 'static {
+            <U as
+                hashed::generator::EnumerableStorageMap<K,
+                                                        V>>::enumerate(&RuntimeStorage)
+        }
+    }
+    /// An implementation of a map with a two keys.
+    ///
+    /// It provides an important ability to efficiently remove all entries
+    /// that have a common first key.
+    ///
+    /// # Mapping of keys to a storage path
+    ///
+    /// The storage key (i.e. the key under which the `Value` will be stored) is created from two parts.
+    /// The first part is a hash of a concatenation of the `PREFIX` and `Key1`. And the second part
+    /// is a hash of a `Key2`.
+    ///
+    /// /!\ be careful while choosing the Hash, indeed malicious could craft second keys to lower the trie.
+    pub trait StorageDoubleMap<K1: Codec, K2: Codec, V: Codec> {
+        /// The type that get/take returns.
+        type
+        Query;
+        /// Get the prefix key in storage.
+        fn prefix()
+        -> &'static [u8];
+        /// Get the storage key used to fetch a value corresponding to a specific key.
+        fn key_for<KArg1: Borrow<K1>, KArg2: Borrow<K2>>(k1: KArg1, k2: KArg2)
+        -> Vec<u8>;
+        /// Get the storage prefix used to fetch keys corresponding to a specific key1.
+        fn prefix_for<KArg1: Borrow<K1>>(k1: KArg1)
+        -> Vec<u8>;
+        /// true if the value is defined in storage.
+        fn exists<KArg1: Borrow<K1>, KArg2: Borrow<K2>>(k1: KArg1, k2: KArg2)
+        -> bool;
+        /// Load the value associated with the given key from the map.
+        fn get<KArg1: Borrow<K1>, KArg2: Borrow<K2>>(k1: KArg1, k2: KArg2)
+        -> Self::Query;
+        /// Take the value under a key.
+        fn take<KArg1: Borrow<K1>, KArg2: Borrow<K2>>(k1: KArg1, k2: KArg2)
+        -> Self::Query;
+        /// Store a value to be associated with the given key from the map.
+        fn insert<KArg1: Borrow<K1>, KArg2: Borrow<K2>,
+                  VArg: Borrow<V>>(k1: KArg1, k2: KArg2, val: VArg);
+        /// Remove the value under a key.
+        fn remove<KArg1: Borrow<K1>, KArg2: Borrow<K2>>(k1: KArg1, k2: KArg2);
+        /// Removes all entries that shares the `k1` as the first key.
+        fn remove_prefix<KArg1: Borrow<K1>>(k1: KArg1);
+        /// Mutate the value under a key.
+        fn mutate<KArg1, KArg2, R, F>(k1: KArg1, k2: KArg2, f: F)
+        -> R
+        where
+        KArg1: Borrow<K1>,
+        KArg2: Borrow<K2>,
+        F: FnOnce(&mut Self::Query)
+        ->
+        R;
+        /// Append the given items to the value under the key specified.
+        ///
+        /// `V` is required to implement `codec::EncodeAppend<Item=I>`.
+        fn append<KArg1, KArg2, I>(k1: KArg1, k2: KArg2, items: &[I])
+        -> Result<(), &'static str>
+        where
+        KArg1: Borrow<K1>,
+        KArg2: Borrow<K2>,
+        I: codec::Encode,
+        V: EncodeAppend<Item
+        =
+        I>;
+    }
+    impl <K1: Codec, K2: Codec, V: Codec, U> StorageDoubleMap<K1, K2, V> for U
+     where U: unhashed::generator::StorageDoubleMap<K1, K2, V> {
+        type
+        Query
+        =
+        U::Query;
+        fn prefix() -> &'static [u8] {
+            <U as unhashed::generator::StorageDoubleMap<K1, K2, V>>::prefix()
+        }
+        fn key_for<KArg1: Borrow<K1>, KArg2: Borrow<K2>>(k1: KArg1, k2: KArg2)
+         -> Vec<u8> {
+            <U as
+                unhashed::generator::StorageDoubleMap<K1, K2,
+                                                      V>>::key_for(k1.borrow(),
+                                                                   k2.borrow())
+        }
+        fn prefix_for<KArg1: Borrow<K1>>(k1: KArg1) -> Vec<u8> {
+            <U as
+                unhashed::generator::StorageDoubleMap<K1, K2,
+                                                      V>>::prefix_for(k1.borrow())
+        }
+        fn exists<KArg1: Borrow<K1>, KArg2: Borrow<K2>>(k1: KArg1, k2: KArg2)
+         -> bool {
+            U::exists(k1.borrow(), k2.borrow(), &RuntimeStorage)
+        }
+        fn get<KArg1: Borrow<K1>, KArg2: Borrow<K2>>(k1: KArg1, k2: KArg2)
+         -> Self::Query {
+            U::get(k1.borrow(), k2.borrow(), &RuntimeStorage)
+        }
+        fn take<KArg1: Borrow<K1>, KArg2: Borrow<K2>>(k1: KArg1, k2: KArg2)
+         -> Self::Query {
+            U::take(k1.borrow(), k2.borrow(), &RuntimeStorage)
+        }
+        fn insert<KArg1: Borrow<K1>, KArg2: Borrow<K2>,
+                  VArg: Borrow<V>>(k1: KArg1, k2: KArg2, val: VArg) {
+            U::insert(k1.borrow(), k2.borrow(), val.borrow(), &RuntimeStorage)
+        }
+        fn remove<KArg1: Borrow<K1>,
+                  KArg2: Borrow<K2>>(k1: KArg1, k2: KArg2) {
+            U::remove(k1.borrow(), k2.borrow(), &RuntimeStorage)
+        }
+        fn remove_prefix<KArg1: Borrow<K1>>(k1: KArg1) {
+            U::remove_prefix(k1.borrow(), &RuntimeStorage)
+        }
+        fn mutate<KArg1, KArg2, R, F>(k1: KArg1, k2: KArg2, f: F) -> R where
+         KArg1: Borrow<K1>, KArg2: Borrow<K2>, F: FnOnce(&mut Self::Query) ->
+         R {
+            U::mutate(k1.borrow(), k2.borrow(), f, &RuntimeStorage)
+        }
+        fn append<KArg1, KArg2, I>(k1: KArg1, k2: KArg2, items: &[I])
+         -> Result<(), &'static str> where KArg1: Borrow<K1>,
+         KArg2: Borrow<K2>, I: codec::Encode, V: EncodeAppend<Item = I> {
+            U::append(k1.borrow(), k2.borrow(), items, &RuntimeStorage)
+        }
+    }
+    /// child storage NOTE could replace unhashed by having only one kind of storage (root being null storage
+    /// key (storage_key can become Option<&[u8]>).
+    /// This module is a currently only a variant of unhashed with additional `storage_key`.
+    /// Note that `storage_key` must be unique and strong (strong in the sense of being long enough to
+    /// avoid collision from a resistant hash function (which unique implies)).
+    pub mod child {
+        use super::{Codec, Decode, Vec, IncrementalChildInput};
+        /// Return the value of the item in storage under `key`, or `None` if there is no explicit entry.
+        pub fn get<T: Codec + Sized>(storage_key: &[u8], key: &[u8])
+         -> Option<T> {
+            runtime_io::read_child_storage(storage_key, key, &mut [0; 0][..],
+                                           0).map(|_|
+                                                      {
+                                                          let mut input =
+                                                              IncrementalChildInput{storage_key,
+                                                                                    key,
+                                                                                    pos:
+                                                                                        0,};
+                                                          Decode::decode(&mut input).expect("storage is not null, therefore must be a valid type")
+                                                      })
+        }
+        /// Return the value of the item in storage under `key`, or the type's default if there is no
+        /// explicit entry.
+        pub fn get_or_default<T: Codec + Sized +
+                              Default>(storage_key: &[u8], key: &[u8]) -> T {
+            get(storage_key, key).unwrap_or_else(Default::default)
+        }
+        /// Return the value of the item in storage under `key`, or `default_value` if there is no
+        /// explicit entry.
+        pub fn get_or<T: Codec +
+                      Sized>(storage_key: &[u8], key: &[u8], default_value: T)
+         -> T {
+            get(storage_key, key).unwrap_or(default_value)
+        }
+        /// Return the value of the item in storage under `key`, or `default_value()` if there is no
+        /// explicit entry.
+        pub fn get_or_else<T: Codec + Sized, F: FnOnce() ->
+                           T>(storage_key: &[u8], key: &[u8],
+                              default_value: F) -> T {
+            get(storage_key, key).unwrap_or_else(default_value)
+        }
+        /// Put `value` in storage under `key`.
+        pub fn put<T: Codec>(storage_key: &[u8], key: &[u8], value: &T) {
+            value.using_encoded(|slice|
+                                    runtime_io::set_child_storage(storage_key,
+                                                                  key,
+                                                                  slice));
+        }
+        /// Remove `key` from storage, returning its value if it had an explicit entry or `None` otherwise.
+        pub fn take<T: Codec + Sized>(storage_key: &[u8], key: &[u8])
+         -> Option<T> {
+            let r = get(storage_key, key);
+            if r.is_some() { kill(storage_key, key); }
+            r
+        }
+        /// Remove `key` from storage, returning its value, or, if there was no explicit entry in storage,
+        /// the default for its type.
+        pub fn take_or_default<T: Codec + Sized +
+                               Default>(storage_key: &[u8], key: &[u8]) -> T {
+            take(storage_key, key).unwrap_or_else(Default::default)
+        }
+        /// Return the value of the item in storage under `key`, or `default_value` if there is no
+        /// explicit entry. Ensure there is no explicit entry on return.
+        pub fn take_or<T: Codec +
+                       Sized>(storage_key: &[u8], key: &[u8],
+                              default_value: T) -> T {
+            take(storage_key, key).unwrap_or(default_value)
+        }
+        /// Return the value of the item in storage under `key`, or `default_value()` if there is no
+        /// explicit entry. Ensure there is no explicit entry on return.
+        pub fn take_or_else<T: Codec + Sized, F: FnOnce() ->
+                            T>(storage_key: &[u8], key: &[u8],
+                               default_value: F) -> T {
+            take(storage_key, key).unwrap_or_else(default_value)
+        }
+        /// Check to see if `key` has an explicit entry in storage.
+        pub fn exists(storage_key: &[u8], key: &[u8]) -> bool {
+            runtime_io::read_child_storage(storage_key, key, &mut [0; 0][..],
+                                           0).is_some()
+        }
+        /// Remove all `storage_key` key/values
+        pub fn kill_storage(storage_key: &[u8]) {
+            runtime_io::kill_child_storage(storage_key)
+        }
+        /// Ensure `key` has no explicit entry in storage.
+        pub fn kill(storage_key: &[u8], key: &[u8]) {
+            runtime_io::clear_child_storage(storage_key, key);
+        }
+        /// Get a Vec of bytes from storage.
+        pub fn get_raw(storage_key: &[u8], key: &[u8]) -> Option<Vec<u8>> {
+            runtime_io::child_storage(storage_key, key)
+        }
+        /// Put a raw byte slice into storage.
+        pub fn put_raw(storage_key: &[u8], key: &[u8], value: &[u8]) {
+            runtime_io::set_child_storage(storage_key, key, value)
+        }
+        pub use super::unhashed::StorageVec;
+    }
+}
+mod hashable {
+    //! Hashable trait.
+    use crate::codec::Codec;
+    use runtime_io::{blake2_128, blake2_256, twox_128, twox_256};
+    use crate::storage::hashed::generator::StorageHasher;
+    use crate::Twox64Concat;
+    use crate::rstd::prelude::Vec;
+    pub trait Hashable: Sized {
+        fn blake2_128(&self)
+        -> [u8; 16];
+        fn blake2_256(&self)
+        -> [u8; 32];
+        fn twox_128(&self)
+        -> [u8; 16];
+        fn twox_256(&self)
+        -> [u8; 32];
+        fn twox_64_concat(&self)
+        -> Vec<u8>;
+    }
+    impl <T: Codec> Hashable for T {
+        fn blake2_128(&self) -> [u8; 16] { self.using_encoded(blake2_128) }
+        fn blake2_256(&self) -> [u8; 32] { self.using_encoded(blake2_256) }
+        fn twox_128(&self) -> [u8; 16] { self.using_encoded(twox_128) }
+        fn twox_256(&self) -> [u8; 32] { self.using_encoded(twox_256) }
+        fn twox_64_concat(&self) -> Vec<u8> {
+            self.using_encoded(Twox64Concat::hash)
+        }
+    }
+}
+#[macro_use]
+pub mod event {
+    //! Macros that define an Event types. Events can be used to easily report changes or conditions
+    //! in your runtime to external entities like users, chain explorers, or dApps.
+    pub use srml_metadata::{EventMetadata, DecodeDifferent,
+                            OuterEventMetadata, FnEncode};
+    /// Implement the `Event` for a module.
+    ///
+    /// # Simple Event Example:
+    ///
+    /// ```rust
+    /// srml_support::decl_event!(
+    ///    pub enum Event {
+    ///       Success,
+    ///       Failure(String),
+    ///    }
+    /// );
+    ///
+    ///# fn main() {}
+    /// ```
+    ///
+    /// # Generic Event Example:
+    ///
+    /// ```rust
+    /// trait Trait {
+    ///     type Balance;
+    ///     type Token;
+    /// }
+    ///
+    /// mod event1 {
+    ///     // Event that specifies the generic parameter explicitly (`Balance`).
+    ///     srml_support::decl_event!(
+    ///        pub enum Event<T> where Balance = <T as super::Trait>::Balance {
+    ///           Message(Balance),
+    ///        }
+    ///     );
+    /// }
+    ///
+    /// mod event2 {
+    ///     // Event that uses the generic parameter `Balance`.
+    ///     // If no name for the generic parameter is specified explicitly,
+    ///     // the name will be taken from the type name of the trait.
+    ///     srml_support::decl_event!(
+    ///        pub enum Event<T> where <T as super::Trait>::Balance {
+    ///           Message(Balance),
+    ///        }
+    ///     );
+    /// }
+    ///
+    /// mod event3 {
+    ///     // And we even support declaring multiple generic parameters!
+    ///     srml_support::decl_event!(
+    ///        pub enum Event<T> where <T as super::Trait>::Balance, <T as super::Trait>::Token {
+    ///           Message(Balance, Token),
+    ///        }
+    ///     );
+    /// }
+    ///
+    ///# fn main() {}
+    /// ```
+    ///
+    /// The syntax for generic events requires the `where`.
+    ///
+    /// # Generic Event with Instance Example:
+    ///
+    /// ```rust
+    ///# struct DefaultInstance;
+    ///# trait Instance {}
+    ///# impl Instance for DefaultInstance {}
+    /// trait Trait<I: Instance=DefaultInstance> {
+    ///     type Balance;
+    ///     type Token;
+    /// }
+    ///
+    /// // For module with instances, DefaultInstance is optional
+    /// srml_support::decl_event!(
+    ///    pub enum Event<T, I: Instance = DefaultInstance> where
+    ///       <T as Trait>::Balance,
+    ///       <T as Trait>::Token
+    ///    {
+    ///       Message(Balance, Token),
+    ///    }
+    /// );
+    ///# fn main() {}
+    /// ```
+    #[macro_export]
+    macro_rules! decl_event((
+                            $ ( # [ $ attr : meta ] ) * pub enum Event < $
+                            evt_generic_param : ident $ (
+                            , $ instance : ident $ ( : $ instantiable : ident
+                            ) ? $ ( = $ event_default_instance : path ) ? ) ?
+                            > where $ ( $ tt : tt ) * ) => {
+                            $ crate :: __decl_generic_event ! (
+                            $ ( # [ $ attr ] ) * ; $ evt_generic_param ; $ (
+                            $ instance $ ( = $ event_default_instance ) ? ) ?
+                            ; { $ ( $ tt ) * } ; ) ; } ; (
+                            $ ( # [ $ attr : meta ] ) * pub enum Event {
+                            $ ( $ events : tt ) * } ) => {
+                            # [
+                            derive (
+                            Clone , PartialEq , Eq , $ crate :: codec ::
+                            Encode , $ crate :: codec :: Decode ) ] # [
+                            cfg_attr ( feature = "std" , derive ( Debug ) ) ]
+                            /// Events for this module.
+                             ///
+                             $ ( # [ $ attr ] ) * pub enum Event {
+                            $ ( $ events ) * } impl From < Event > for (  ) {
+                            fn from ( _ : Event ) -> (  ) { (  ) } } impl
+                            Event {
+                            # [ allow ( dead_code ) ] pub fn metadata (  ) ->
+                            & 'static [ $ crate :: event :: EventMetadata ] {
+                            $ crate :: __events_to_metadata ! (
+                            ; $ ( $ events ) * ) } } });
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __decl_generic_event((
+                                      $ ( # [ $ attr : meta ] ) * ; $
+                                      event_generic_param : ident ; $ (
+                                      $ instance : ident $ (
+                                      = $ event_default_instance : path ) ? )
+                                      ? ; { $ ( $ tt : tt ) * } ; ) => {
+                                      $ crate :: __decl_generic_event ! (
+                                      @ format_generic $ ( # [ $ attr ] ) * ;
+                                      $ event_generic_param ; $ (
+                                      $ instance $ (
+                                      = $ event_default_instance ) ? ) ? ; {
+                                      $ ( $ tt ) * } ; {  } ; ) ; } ; (
+                                      @ format_generic $ ( # [ $ attr : meta ]
+                                      ) * ; $ event_generic_param : ident ; $
+                                      (
+                                      $ instance : ident $ (
+                                      = $ event_default_instance : path ) ? )
+                                      ? ; {
+                                      < $ generic : ident as $ trait : path >
+                                      :: $ trait_type : ident $ ( , ) ? {
+                                      $ ( $ events : tt ) * } } ; {
+                                      $ ( $ parsed : tt ) * } ; ) => {
+                                      $ crate :: __decl_generic_event ! (
+                                      @ generate $ ( # [ $ attr ] ) * ; $
+                                      event_generic_param ; $ (
+                                      $ instance $ (
+                                      = $ event_default_instance ) ? ) ? ; {
+                                      $ ( $ events ) * } ; {
+                                      $ ( $ parsed ) * , $ trait_type = < $
+                                      generic as $ trait > :: $ trait_type } ;
+                                      ) ; } ; (
+                                      @ format_generic $ ( # [ $ attr : meta ]
+                                      ) * ; $ event_generic_param : ident ; $
+                                      (
+                                      $ instance : ident $ (
+                                      = $ event_default_instance : path ) ? )
+                                      ? ; {
+                                      $ generic_rename : ident = $
+                                      generic_type : ty $ ( , ) ? {
+                                      $ ( $ events : tt ) * } } ; {
+                                      $ ( $ parsed : tt ) * } ; ) => {
+                                      $ crate :: __decl_generic_event ! (
+                                      @ generate $ ( # [ $ attr ] ) * ; $
+                                      event_generic_param ; $ (
+                                      $ instance $ (
+                                      = $ event_default_instance ) ? ) ? ; {
+                                      $ ( $ events ) * } ; {
+                                      $ ( $ parsed ) * , $ generic_rename = $
+                                      generic_type } ; ) ; } ; (
+                                      @ format_generic $ ( # [ $ attr : meta ]
+                                      ) * ; $ event_generic_param : ident ; $
+                                      (
+                                      $ instance : ident $ (
+                                      = $ event_default_instance : path ) ? )
+                                      ? ; {
+                                      $ generic_rename : ident = $
+                                      generic_type : ty , $ ( $ rest : tt ) *
+                                      } ; { $ ( $ parsed : tt ) * } ; ) => {
+                                      $ crate :: __decl_generic_event ! (
+                                      @ format_generic $ ( # [ $ attr ] ) * ;
+                                      $ event_generic_param ; $ (
+                                      $ instance $ (
+                                      = $ event_default_instance ) ? ) ? ; {
+                                      $ ( $ rest ) * } ; {
+                                      $ ( $ parsed ) * , $ generic_rename = $
+                                      generic_type } ; ) ; } ; (
+                                      @ format_generic $ ( # [ $ attr : meta ]
+                                      ) * ; $ event_generic_param : ident ; $
+                                      (
+                                      $ instance : ident $ (
+                                      = $ event_default_instance : path ) ? )
+                                      ? ; {
+                                      < $ generic : ident as $ trait : path >
+                                      :: $ trait_type : ident , $ (
+                                      $ rest : tt ) * } ; {
+                                      $ ( $ parsed : tt ) * } ; ) => {
+                                      $ crate :: __decl_generic_event ! (
+                                      @ format_generic $ ( # [ $ attr ] ) * ;
+                                      $ event_generic_param ; $ (
+                                      $ instance $ (
+                                      = $ event_default_instance ) ? ) ? ; {
+                                      $ ( $ rest ) * } ; {
+                                      $ ( $ parsed ) * , $ trait_type = < $
+                                      generic as $ trait > :: $ trait_type } ;
+                                      ) ; } ; (
+                                      @ format_generic $ ( # [ $ attr : meta ]
+                                      ) * ; $ event_generic_param : ident ; $
+                                      (
+                                      $ instance : ident $ (
+                                      = $ event_default_instance : path ) ? )
+                                      ? ; {
+                                      $ generic_type : ty , $ ( $ rest : tt )
+                                      * } ; { $ ( $ parsed : tt ) * } ; ) => {
+                                      $ crate :: __decl_generic_event ! (
+                                      @ cannot_parse $ generic_type ) ; } ; (
+                                      @ format_generic $ ( # [ $ attr : meta ]
+                                      ) * ; $ event_generic_param : ident ; $
+                                      (
+                                      $ instance : ident $ (
+                                      = $ event_default_instance : path ) ? )
+                                      ? ; {
+                                      $ generic_type : ty {
+                                      $ ( $ events : tt ) * } } ; {
+                                      $ ( $ parsed : tt ) * } ; ) => {
+                                      $ crate :: __decl_generic_event ! (
+                                      @ cannot_parse $ generic_type ) ; } ; (
+                                      @ generate $ ( # [ $ attr : meta ] ) * ;
+                                      $ event_generic_param : ident ; $ (
+                                      $ instance : ident $ (
+                                      = $ event_default_instance : path ) ? )
+                                      ? ; { $ ( $ events : tt ) * } ; {
+                                      , $ (
+                                      $ generic_param : ident = $ generic_type
+                                      : ty ) , * } ; ) => {
+                                      /// [`RawEvent`] specialized for the configuration [`Trait`]
+                                       ///
+                                       /// [`RawEvent`]: enum.RawEvent.html
+                                       /// [`Trait`]: trait.Trait.html
+                                       pub type Event < $ event_generic_param
+                                      $ (
+                                      , $ instance $ (
+                                      = $ event_default_instance ) ? ) ? > =
+                                      RawEvent < $ ( $ generic_type ) , * $ (
+                                      , $ instance ) ? > ; # [
+                                      derive (
+                                      Clone , PartialEq , Eq , $ crate ::
+                                      codec :: Encode , $ crate :: codec ::
+                                      Decode ) ] # [
+                                      cfg_attr (
+                                      feature = "std" , derive ( Debug ) ) ]
+                                      /// Events for this module.
+                                       ///
+                                       $ ( # [ $ attr ] ) * pub enum RawEvent
+                                      < $ ( $ generic_param ) , * $ (
+                                      , $ instance ) ? > {
+                                      $ ( $ events ) * $ (
+                                      # [ doc ( hidden ) ] # [ codec ( skip )
+                                      ] PhantomData (
+                                      $ crate :: rstd :: marker :: PhantomData
+                                      < $ instance > ) , ) ? } impl < $ (
+                                      $ generic_param ) , * $ ( , $ instance )
+                                      ? > From < RawEvent < $ (
+                                      $ generic_param ) , * $ ( , $ instance )
+                                      ? >> for (  ) {
+                                      fn from (
+                                      _ : RawEvent < $ ( $ generic_param ) , *
+                                      $ ( , $ instance ) ? > ) -> (  ) { (  )
+                                      } } impl < $ ( $ generic_param ) , * $ (
+                                      , $ instance ) ? > RawEvent < $ (
+                                      $ generic_param ) , * $ ( , $ instance )
+                                      ? > {
+                                      # [ allow ( dead_code ) ] pub fn
+                                      metadata (  ) -> & 'static [
+                                      $ crate :: event :: EventMetadata ] {
+                                      $ crate :: __events_to_metadata ! (
+                                      ; $ ( $ events ) * ) } } } ; (
+                                      @ cannot_parse $ ty : ty ) => {
+                                      compile_error ! (
+                                      concat ! (
+                                      "The type `" , stringify ! ( $ ty ) ,
+                                      "` can't be parsed as an unnamed one, please name it `Name = "
+                                      , stringify ! ( $ ty ) , "`" ) ) ; });
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __events_to_metadata((
+                                      $ ( $ metadata : expr ) , * ; $ (
+                                      # [ doc = $ doc_attr : tt ] ) * $ event
+                                      : ident $ ( ( $ ( $ param : path ) , * )
+                                      ) * , $ ( $ rest : tt ) * ) => {
+                                      $ crate :: __events_to_metadata ! (
+                                      $ ( $ metadata , ) * $ crate :: event ::
+                                      EventMetadata {
+                                      name : $ crate :: event ::
+                                      DecodeDifferent :: Encode (
+                                      stringify ! ( $ event ) ) , arguments :
+                                      $ crate :: event :: DecodeDifferent ::
+                                      Encode (
+                                      & [
+                                      $ ( $ ( stringify ! ( $ param ) ) , * )
+                                      * ] ) , documentation : $ crate :: event
+                                      :: DecodeDifferent :: Encode (
+                                      & [ $ ( $ doc_attr ) , * ] ) , } ; $ (
+                                      $ rest ) * ) } ; (
+                                      $ ( $ metadata : expr ) , * ; ) => {
+                                      & [ $ ( $ metadata ) , * ] });
+    /// Constructs an Event type for a runtime. This is usually called automatically by the
+    /// construct_runtime macro. See also __create_decl_macro.
+    #[macro_export]
+    macro_rules! impl_outer_event((
+                                  $ ( # [ $ attr : meta ] ) * pub enum $ name
+                                  : ident for $ runtime : ident {
+                                  $ (
+                                  $ rest : tt $ (
+                                  < $ t : ident $ ( , $ rest_instance : path )
+                                  ? > ) * , ) * } ) => {
+                                  $ crate :: impl_outer_event ! (
+                                  $ ( # [ $ attr ] ) * ; $ name ; $ runtime ;
+                                  system ; Modules {
+                                  $ (
+                                  $ rest $ ( < $ t $ ( , $ rest_instance ) ? >
+                                  ) * , ) * } ; ; ) ; } ; (
+                                  $ ( # [ $ attr : meta ] ) * pub enum $ name
+                                  : ident for $ runtime : ident where system =
+                                  $ system : ident {
+                                  $ (
+                                  $ rest : tt $ (
+                                  < $ t : ident $ ( , $ rest_instance : path )
+                                  ? > ) * , ) * } ) => {
+                                  $ crate :: impl_outer_event ! (
+                                  $ ( # [ $ attr ] ) * ; $ name ; $ runtime ;
+                                  $ system ; Modules {
+                                  $ (
+                                  $ rest $ ( < $ t $ ( , $ rest_instance ) ? >
+                                  ) * , ) * } ; ; ) ; } ; (
+                                  $ ( # [ $ attr : meta ] ) * ; $ name : ident
+                                  ; $ runtime : ident ; $ system : ident ;
+                                  Modules {
+                                  $ module : ident < T $ ( , $ instance : path
+                                  ) ? > , $ (
+                                  $ rest : tt $ (
+                                  < $ t : ident $ ( , $ rest_instance : path )
+                                  ? > ) * , ) * } ; $ (
+                                  $ module_name : ident :: Event $ (
+                                  < $ generic_param : ident $ (
+                                  , $ generic_instance : path ) ? > ) * , ) *
+                                  ; ) => {
+                                  $ crate :: impl_outer_event ! (
+                                  $ ( # [ $ attr ] ) * ; $ name ; $ runtime ;
+                                  $ system ; Modules {
+                                  $ (
+                                  $ rest $ ( < $ t $ ( , $ rest_instance ) ? >
+                                  ) * , ) * } ; $ (
+                                  $ module_name :: Event $ (
+                                  < $ generic_param $ ( , $ generic_instance )
+                                  ? > ) * , ) * $ module :: Event < $ runtime
+                                  $ ( , $ instance ) ? > , ; ) ; } ; (
+                                  $ ( # [ $ attr : meta ] ) * ; $ name : ident
+                                  ; $ runtime : ident ; $ system : ident ;
+                                  Modules {
+                                  $ module : ident , $ ( $ rest : tt ) * } ; $
+                                  (
+                                  $ module_name : ident :: Event $ (
+                                  < $ generic_param : ident $ (
+                                  , $ generic_instance : path ) ? > ) * , ) *
+                                  ; ) => {
+                                  $ crate :: impl_outer_event ! (
+                                  $ ( # [ $ attr ] ) * ; $ name ; $ runtime ;
+                                  $ system ; Modules { $ ( $ rest ) * } ; $ (
+                                  $ module_name :: Event $ (
+                                  < $ generic_param $ ( , $ generic_instance )
+                                  ? > ) * , ) * $ module :: Event , ; ) ; } ;
+                                  (
+                                  $ ( # [ $ attr : meta ] ) * ; $ name : ident
+                                  ; $ runtime : ident ; $ system : ident ;
+                                  Modules {  } ; $ (
+                                  $ module_name : ident :: Event $ (
+                                  < $ generic_param : ident $ (
+                                  , $ generic_instance : path ) ? > ) * , ) *
+                                  ; ) => {
+                                  # [
+                                  derive (
+                                  Clone , PartialEq , Eq , $ crate :: codec ::
+                                  Encode , $ crate :: codec :: Decode ) ] # [
+                                  cfg_attr (
+                                  feature = "std" , derive ( Debug ) ) ] $ (
+                                  # [ $ attr ] ) * # [
+                                  allow ( non_camel_case_types ) ] pub enum $
+                                  name {
+                                  system ( $ system :: Event ) , $ (
+                                  $ module_name (
+                                  $ module_name :: Event $ (
+                                  < $ generic_param $ ( , $ generic_instance )
+                                  ? > ) * ) , ) * } impl From < $ system ::
+                                  Event > for $ name {
+                                  fn from ( x : $ system :: Event ) -> Self {
+                                  $ name :: system ( x ) } } $ (
+                                  impl From < $ module_name :: Event $ (
+                                  < $ generic_param $ ( , $ generic_instance )
+                                  ? > ) * > for $ name {
+                                  fn from (
+                                  x : $ module_name :: Event $ (
+                                  < $ generic_param $ ( , $ generic_instance )
+                                  ? > ) * ) -> Self {
+                                  $ name :: $ module_name ( x ) } } ) * $
+                                  crate :: __impl_outer_event_json_metadata !
+                                  (
+                                  $ runtime ; $ name ; $ system ; $ (
+                                  $ module_name :: Event $ (
+                                  < $ generic_param $ ( , $ generic_instance )
+                                  ? > ) * , ) * ; ) ; });
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __impl_outer_event_json_metadata((
+                                                  $ runtime : ident ; $
+                                                  event_name : ident ; $
+                                                  system : ident ; $ (
+                                                  $ module_name : ident ::
+                                                  Event $ (
+                                                  < $ generic_param : ident $
+                                                  (
+                                                  , $ generic_instance : path
+                                                  ) ? > ) * , ) * ; ) => {
+                                                  impl $ runtime {
+                                                  # [ allow ( dead_code ) ]
+                                                  pub fn outer_event_metadata
+                                                  (  ) -> $ crate :: event ::
+                                                  OuterEventMetadata {
+                                                  $ crate :: event ::
+                                                  OuterEventMetadata {
+                                                  name : $ crate :: event ::
+                                                  DecodeDifferent :: Encode (
+                                                  stringify ! ( $ event_name )
+                                                  ) , events : $ crate ::
+                                                  event :: DecodeDifferent ::
+                                                  Encode (
+                                                  & [
+                                                  (
+                                                  "system" , $ crate :: event
+                                                  :: FnEncode (
+                                                  system :: Event :: metadata
+                                                  ) ) $ (
+                                                  , (
+                                                  stringify ! ( $ module_name
+                                                  ) , $ crate :: event ::
+                                                  FnEncode (
+                                                  $ module_name :: Event $ (
+                                                  :: < $ generic_param $ (
+                                                  , $ generic_instance ) ? > )
+                                                  * :: metadata ) ) ) * ] ) }
+                                                  } # [ allow ( dead_code ) ]
+                                                  pub fn
+                                                  __module_events_system (  )
+                                                  -> & 'static [
+                                                  $ crate :: event ::
+                                                  EventMetadata ] {
+                                                  system :: Event :: metadata
+                                                  (  ) } $ (
+                                                  # [ allow ( dead_code ) ] $
+                                                  crate :: paste :: item ! {
+                                                  pub fn [
+                                                  < __module_events_ $
+                                                  module_name > ] (  ) -> &
+                                                  'static [
+                                                  $ crate :: event ::
+                                                  EventMetadata ] {
+                                                  $ module_name :: Event $ (
+                                                  :: < $ generic_param $ (
+                                                  , $ generic_instance ) ? > )
+                                                  * :: metadata (  ) } } ) * }
+                                                  });
+}
+#[macro_use]
+mod origin {
+    //! Macros that define an Origin type. Every function call to your runtime has an origin which
+    //! specifies where the extrinsic was generated from.
+    /// Constructs an Origin type for a runtime. This is usually called automatically by the
+    /// construct_runtime macro. See also __create_decl_macro.
+    #[macro_export]
+    macro_rules! impl_outer_origin((
+                                   $ ( # [ $ attr : meta ] ) * pub enum $ name
+                                   : ident for $ runtime : ident {
+                                   $ (
+                                   $ module : ident $ (
+                                   < $ generic : ident $ ( , $ instance : path
+                                   ) ? > ) ? ) , * $ ( , ) ? } ) => {
+                                   $ crate :: impl_outer_origin ! {
+                                   $ ( # [ $ attr ] ) * pub enum $ name for $
+                                   runtime where system = system {
+                                   $ (
+                                   $ module $ (
+                                   < $ generic $ ( , $ instance ) ? > ) ? , )
+                                   * } } } ; (
+                                   $ ( # [ $ attr : meta ] ) * pub enum $ name
+                                   : ident for $ runtime : ident where system
+                                   = $ system : ident {
+                                   $ (
+                                   $ module : ident $ (
+                                   < $ generic : ident $ ( , $ instance : path
+                                   ) ? > ) ? ) , * $ ( , ) ? } ) => {
+                                   $ crate :: impl_outer_origin ! (
+                                   $ ( # [ $ attr ] ) * ; $ name ; $ runtime ;
+                                   $ system ; Modules {
+                                   $ (
+                                   $ module $ (
+                                   < $ generic $ ( , $ instance ) ? > ) * , )
+                                   * } ; ) ; } ; (
+                                   $ ( # [ $ attr : meta ] ) * ; $ name :
+                                   ident ; $ runtime : ident ; $ system :
+                                   ident ; Modules {
+                                   $ module : ident $ (
+                                   < T $ ( , $ instance : path ) ? > ) ? , $ (
+                                   $ rest_module : tt ) * } ; $ (
+                                   $ parsed : tt ) * ) => {
+                                   $ crate :: impl_outer_origin ! (
+                                   $ ( # [ $ attr ] ) * ; $ name ; $ runtime ;
+                                   $ system ; Modules { $ ( $ rest_module ) *
+                                   } ; $ ( $ parsed ) * $ module $ (
+                                   < $ runtime $ ( , $ instance ) ? > ) ? , )
+                                   ; } ; (
+                                   $ ( # [ $ attr : meta ] ) * ; $ name :
+                                   ident ; $ runtime : ident ; $ system :
+                                   ident ; Modules {  } ; $ (
+                                   $ module : ident $ (
+                                   < $ generic_param : ident $ (
+                                   , $ generic_instance : path ) ? > ) * , ) *
+                                   ) => {
+                                   # [ derive ( Clone , PartialEq , Eq ) ] # [
+                                   cfg_attr (
+                                   feature = "std" , derive ( Debug ) ) ] $ (
+                                   # [ $ attr ] ) * # [
+                                   allow ( non_camel_case_types ) ] pub enum $
+                                   name {
+                                   system ( $ system :: Origin < $ runtime > )
+                                   , $ (
+                                   $ module (
+                                   $ module :: Origin $ (
+                                   < $ generic_param $ ( , $ generic_instance
+                                   ) ? > ) * ) , ) * # [ allow ( dead_code ) ]
+                                   Void ( $ crate :: Void ) } # [
+                                   allow ( dead_code ) ] impl $ name {
+                                   pub const NONE : Self = $ name :: system (
+                                   $ system :: RawOrigin :: None ) ; pub const
+                                   ROOT : Self = $ name :: system (
+                                   $ system :: RawOrigin :: Root ) ; pub fn
+                                   signed (
+                                   by : < $ runtime as $ system :: Trait > ::
+                                   AccountId ) -> Self {
+                                   $ name :: system (
+                                   $ system :: RawOrigin :: Signed ( by ) ) }
+                                   } impl From < $ system :: Origin < $
+                                   runtime >> for $ name {
+                                   fn from (
+                                   x : $ system :: Origin < $ runtime > ) ->
+                                   Self { $ name :: system ( x ) } } impl Into
+                                   < Option < $ system :: Origin < $ runtime
+                                   >> > for $ name {
+                                   fn into ( self ) -> Option < $ system ::
+                                   Origin < $ runtime >> {
+                                   if let $ name :: system ( l ) = self {
+                                   Some ( l ) } else { None } } } impl From <
+                                   Option << $ runtime as $ system :: Trait >
+                                   :: AccountId >> for $ name {
+                                   fn from (
+                                   x : Option << $ runtime as $ system ::
+                                   Trait > :: AccountId > ) -> Self {
+                                   < $ system :: Origin < $ runtime >> :: from
+                                   ( x ) . into (  ) } } $ (
+                                   impl From < $ module :: Origin $ (
+                                   < $ generic_param $ ( , $ generic_instance
+                                   ) ? > ) * > for $ name {
+                                   fn from (
+                                   x : $ module :: Origin $ (
+                                   < $ generic_param $ ( , $ generic_instance
+                                   ) ? > ) * ) -> Self {
+                                   $ name :: $ module ( x ) } } impl Into <
+                                   Option < $ module :: Origin $ (
+                                   < $ generic_param $ ( , $ generic_instance
+                                   ) ? > ) * >> for $ name {
+                                   fn into ( self ) -> Option < $ module ::
+                                   Origin $ (
+                                   < $ generic_param $ ( , $ generic_instance
+                                   ) ? > ) * > {
+                                   if let $ name :: $ module ( l ) = self {
+                                   Some ( l ) } else { None } } } ) * });
+}
+#[macro_use]
+pub mod metadata {
+    pub use srml_metadata::{DecodeDifferent, FnEncode, RuntimeMetadata,
+                            ModuleMetadata, RuntimeMetadataV4,
+                            DefaultByteGetter, RuntimeMetadataPrefixed,
+                            StorageMetadata, StorageFunctionMetadata,
+                            StorageFunctionType, StorageFunctionModifier,
+                            DefaultByte, StorageHasher};
+    /// Implements the metadata support for the given runtime and all its modules.
+    ///
+    /// Example:
+    /// ```compile_fail
+    /// impl_runtime_metadata!(for RUNTIME_NAME with modules MODULE0, MODULE2, MODULE3 with Storage);
+    /// ```
+    ///
+    /// In this example, just `MODULE3` implements the `Storage` trait.
+    #[macro_export]
+    macro_rules! impl_runtime_metadata((
+                                       for $ runtime : ident with modules $ (
+                                       $ rest : tt ) * ) => {
+                                       impl $ runtime {
+                                       pub fn metadata (  ) -> $ crate ::
+                                       metadata :: RuntimeMetadataPrefixed {
+                                       $ crate :: metadata :: RuntimeMetadata
+                                       :: V4 (
+                                       $ crate :: metadata ::
+                                       RuntimeMetadataV4 {
+                                       modules : $ crate ::
+                                       __runtime_modules_to_metadata ! (
+                                       $ runtime ; ; $ ( $ rest ) * ) , } ) .
+                                       into (  ) } } });
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __runtime_modules_to_metadata((
+                                               $ runtime : ident ; $ (
+                                               $ metadata : expr ) , * ; $ mod
+                                               : ident :: $ module : ident $ (
+                                               < $ instance : ident > ) ? $ (
+                                               with ) + $ ( $ kw : ident ) * ,
+                                               $ ( $ rest : tt ) * ) => {
+                                               $ crate ::
+                                               __runtime_modules_to_metadata !
+                                               (
+                                               $ runtime ; $ ( $ metadata , )
+                                               * $ crate :: metadata ::
+                                               ModuleMetadata {
+                                               name : $ crate :: metadata ::
+                                               DecodeDifferent :: Encode (
+                                               stringify ! ( $ mod ) ) ,
+                                               prefix : $ crate ::
+                                               __runtime_modules_to_metadata_calls_storagename
+                                               ! (
+                                               $ mod , $ module $ (
+                                               < $ instance > ) ? , $ runtime
+                                               , $ ( with $ kw ) * ) , storage
+                                               : $ crate ::
+                                               __runtime_modules_to_metadata_calls_storage
+                                               ! (
+                                               $ mod , $ module $ (
+                                               < $ instance > ) ? , $ runtime
+                                               , $ ( with $ kw ) * ) , calls :
+                                               $ crate ::
+                                               __runtime_modules_to_metadata_calls_call
+                                               ! (
+                                               $ mod , $ module $ (
+                                               < $ instance > ) ? , $ runtime
+                                               , $ ( with $ kw ) * ) , event :
+                                               $ crate ::
+                                               __runtime_modules_to_metadata_calls_event
+                                               ! (
+                                               $ mod , $ module $ (
+                                               < $ instance > ) ? , $ runtime
+                                               , $ ( with $ kw ) * ) , } ; $ (
+                                               $ rest ) * ) } ; (
+                                               $ runtime : ident ; $ (
+                                               $ metadata : expr ) , * ; ) =>
+                                               {
+                                               $ crate :: metadata ::
+                                               DecodeDifferent :: Encode (
+                                               & [ $ ( $ metadata ) , * ] ) }
+                                               ;);
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __runtime_modules_to_metadata_calls_call((
+                                                          system , $
+                                                          skip_module : ident
+                                                          $ (
+                                                          < $ instance : ident
+                                                          > ) ? , $
+                                                          skip_runtime : ident
+                                                          , with Call $ (
+                                                          with $ kws : ident )
+                                                          * ) => { None } ; (
+                                                          $ mod : ident , $
+                                                          module : ident $ (
+                                                          < $ instance : ident
+                                                          > ) ? , $ runtime :
+                                                          ident , with Call $
+                                                          ( with $ kws : ident
+                                                          ) * ) => {
+                                                          Some (
+                                                          $ crate :: metadata
+                                                          :: DecodeDifferent
+                                                          :: Encode (
+                                                          $ crate :: metadata
+                                                          :: FnEncode (
+                                                          $ mod :: $ module ::
+                                                          < $ runtime $ (
+                                                          , $ mod :: $
+                                                          instance ) ? > ::
+                                                          call_functions ) ) )
+                                                          } ; (
+                                                          $ mod : ident , $
+                                                          module : ident $ (
+                                                          < $ instance : ident
+                                                          > ) ? , $ runtime :
+                                                          ident , with $ _ :
+                                                          ident $ (
+                                                          with $ kws : ident )
+                                                          * ) => {
+                                                          $ crate ::
+                                                          __runtime_modules_to_metadata_calls_call
+                                                          ! (
+                                                          $ mod , $ module $ (
+                                                          < $ instance > ) ? ,
+                                                          $ runtime , $ (
+                                                          with $ kws ) * ) ; }
+                                                          ; (
+                                                          $ mod : ident , $
+                                                          module : ident $ (
+                                                          < $ instance : ident
+                                                          > ) ? , $ runtime :
+                                                          ident , ) => { None
+                                                          } ;);
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __runtime_modules_to_metadata_calls_event((
+                                                           $ mod : ident , $
+                                                           module : ident $ (
+                                                           < $ instance :
+                                                           ident > ) ? , $
+                                                           runtime : ident ,
+                                                           with Event $ (
+                                                           with $ kws : ident
+                                                           ) * ) => {
+                                                           Some (
+                                                           $ crate :: metadata
+                                                           :: DecodeDifferent
+                                                           :: Encode (
+                                                           $ crate :: metadata
+                                                           :: FnEncode (
+                                                           $ crate :: paste ::
+                                                           expr ! {
+                                                           $ runtime :: [
+                                                           < __module_events_
+                                                           $ mod $ (
+                                                           _ $ instance ) ? >
+                                                           ] } ) ) ) } ; (
+                                                           $ mod : ident , $
+                                                           module : ident $ (
+                                                           < $ instance :
+                                                           ident > ) ? , $
+                                                           runtime : ident ,
+                                                           with $ _ : ident $
+                                                           (
+                                                           with $ kws : ident
+                                                           ) * ) => {
+                                                           $ crate ::
+                                                           __runtime_modules_to_metadata_calls_event
+                                                           ! (
+                                                           $ mod , $ module $
+                                                           ( < $ instance > )
+                                                           ? , $ runtime , $ (
+                                                           with $ kws ) * ) ;
+                                                           } ; (
+                                                           $ mod : ident , $
+                                                           module : ident $ (
+                                                           < $ instance :
+                                                           ident > ) ? , $
+                                                           runtime : ident , )
+                                                           => { None } ;);
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __runtime_modules_to_metadata_calls_storagename((
+                                                                 $ mod : ident
+                                                                 , $ module :
+                                                                 ident $ (
+                                                                 < $ instance
+                                                                 : ident > ) ?
+                                                                 , $ runtime :
+                                                                 ident , with
+                                                                 Storage $ (
+                                                                 with $ kws :
+                                                                 ident ) * )
+                                                                 => {
+                                                                 $ crate ::
+                                                                 metadata ::
+                                                                 DecodeDifferent
+                                                                 :: Encode (
+                                                                 $ crate ::
+                                                                 metadata ::
+                                                                 FnEncode (
+                                                                 $ mod :: $
+                                                                 module :: < $
+                                                                 runtime $ (
+                                                                 , $ mod :: $
+                                                                 instance ) ?
+                                                                 > ::
+                                                                 store_metadata_name
+                                                                 ) ) } ; (
+                                                                 $ mod : ident
+                                                                 , $ module :
+                                                                 ident $ (
+                                                                 < $ instance
+                                                                 : ident > ) ?
+                                                                 , $ runtime :
+                                                                 ident , with
+                                                                 $ _ : ident $
+                                                                 (
+                                                                 with $ kws :
+                                                                 ident ) * )
+                                                                 => {
+                                                                 $ crate ::
+                                                                 __runtime_modules_to_metadata_calls_storagename
+                                                                 ! (
+                                                                 $ mod , $
+                                                                 module $ (
+                                                                 < $ instance
+                                                                 > ) ? , $
+                                                                 runtime , $ (
+                                                                 with $ kws )
+                                                                 * ) ; } ; (
+                                                                 $ mod : ident
+                                                                 , $ module :
+                                                                 ident $ (
+                                                                 < $ instance
+                                                                 : ident > ) ?
+                                                                 , $ runtime :
+                                                                 ident , ) =>
+                                                                 {
+                                                                 $ crate ::
+                                                                 metadata ::
+                                                                 DecodeDifferent
+                                                                 :: Encode (
+                                                                 $ crate ::
+                                                                 metadata ::
+                                                                 FnEncode (
+                                                                 || "" ) ) }
+                                                                 ;);
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __runtime_modules_to_metadata_calls_storage((
+                                                             $ mod : ident , $
+                                                             module : ident $
+                                                             (
+                                                             < $ instance :
+                                                             ident > ) ? , $
+                                                             runtime : ident ,
+                                                             with Storage $ (
+                                                             with $ kws :
+                                                             ident ) * ) => {
+                                                             Some (
+                                                             $ crate ::
+                                                             metadata ::
+                                                             DecodeDifferent
+                                                             :: Encode (
+                                                             $ crate ::
+                                                             metadata ::
+                                                             FnEncode (
+                                                             $ mod :: $ module
+                                                             :: < $ runtime $
+                                                             (
+                                                             , $ mod :: $
+                                                             instance ) ? > ::
+                                                             store_metadata_functions
+                                                             ) ) ) } ; (
+                                                             $ mod : ident , $
+                                                             module : ident $
+                                                             (
+                                                             < $ instance :
+                                                             ident > ) ? , $
+                                                             runtime : ident ,
+                                                             with $ _ : ident
+                                                             $ (
+                                                             with $ kws :
+                                                             ident ) * ) => {
+                                                             $ crate ::
+                                                             __runtime_modules_to_metadata_calls_storage
+                                                             ! (
+                                                             $ mod , $ module
+                                                             $ (
+                                                             < $ instance > )
+                                                             ? , $ runtime , $
+                                                             ( with $ kws ) *
+                                                             ) ; } ; (
+                                                             $ mod : ident , $
+                                                             module : ident $
+                                                             (
+                                                             < $ instance :
+                                                             ident > ) ? , $
+                                                             runtime : ident ,
+                                                             ) => { None } ;);
+}
+#[macro_use]
+mod runtime {
+    //! Macros to define a runtime. A runtime is basically all your logic running in Substrate,
+    //! consisting of selected SRML modules and maybe some of your own modules.
+    //! A lot of supporting logic is automatically generated for a runtime,
+    //! mostly to combine data types and metadata of the included modules.
+    /// Construct a runtime, with the given name and the given modules.
+    ///
+    /// The parameters here are specific types for `Block`, `NodeBlock`, and `InherentData`
+    /// and the modules that are used by the runtime.
+    /// `Block` is the block type that is used in the runtime and `NodeBlock` is the block type
+    /// that is used in the node. For instance they can differ in the extrinsics type.
+    ///
+    /// # Example:
+    ///
+    /// ```nocompile
+    /// construct_runtime!(
+    ///     pub enum Runtime with Log(interalIdent: DigestItem<SessionKey>) where
+    ///         Block = Block,
+    ///         NodeBlock = runtime::Block,
+    ///         UncheckedExtrinsic = UncheckedExtrinsic
+    ///     {
+    ///         System: system,
+    ///         Test: test::{default, Log(Test)},
+    ///         Test2: test_with_long_module::{Module},
+    ///
+    ///         // Module with instances
+    ///         Test3_Instance1: test3::<Instance1>::{Module, Call, Storage, Event<T, I>, Config<T, I>, Origin<T, I>},
+    ///         Test3_DefaultInstance: test3::{Module, Call, Storage, Event<T>, Config<T>, Origin<T>},
+    ///     }
+    /// )
+    /// ```
+    ///
+    /// The module `System: system` will expand to `System: system::{Module, Call, Storage, Event<T>, Config<T>}`.
+    /// The identifier `System` is the name of the module and the lower case identifier `system` is the
+    /// name of the Rust module/crate for this Substrate module.
+    ///
+    /// The module `Test: test::{default, Log(Test)}` will expand to
+    /// `Test: test::{Module, Call, Storage, Event<T>, Config<T>, Log(Test)}`.
+    ///
+    /// The module `Test2: test_with_long_module::{Module}` will expand to
+    /// `Test2: test_with_long_module::{Module}`.
+    ///
+    /// We provide support for the following types in a module:
+    ///
+    /// - `Module`
+    /// - `Call`
+    /// - `Storage`
+    /// - `Event` or `Event<T>` (if the event is generic) or `Event<T, I>` (if also over instance)
+    /// - `Origin` or `Origin<T>` (if the origin is generic) or `Origin<T, I>` (if also over instance)
+    /// - `Config` or `Config<T>` (if the config is generic) or `Config<T, I>` (if also over instance)
+    /// - `Log( $(IDENT),* )`
+    /// - `Inherent $( (CALL) )*` - If the module provides/can check inherents. The optional parameter
+    ///                             is for modules that use a `Call` from a different module as
+    ///                             inherent.
+    /// - `ValidateUnsigned`      - If the module validates unsigned extrinsics.
+    ///
+    /// # Note
+    ///
+    /// The population of the genesis storage depends on the order of modules. So, if one of your
+    /// modules depends on another module, the module that is depended upon needs to come before
+    /// the module depending on it.
+    #[macro_export]
+    macro_rules! construct_runtime((
+                                   pub enum $ runtime : ident with Log (
+                                   $ log_internal : ident : DigestItem < $ (
+                                   $ log_genarg : ty ) , + > ) where Block = $
+                                   block : ident , NodeBlock = $ node_block :
+                                   ty , UncheckedExtrinsic = $
+                                   uncheckedextrinsic : ident {
+                                   $ ( $ rest : tt ) * } ) => {
+                                   $ crate :: construct_runtime ! (
+                                   {
+                                   $ runtime ; $ block ; $ node_block ; $
+                                   uncheckedextrinsic ; $ log_internal < $ (
+                                   $ log_genarg ) , * > ; } ; {  } ; $ (
+                                   $ rest ) * ) ; } ; (
+                                   { $ ( $ preset : tt ) * } ; {
+                                   $ ( $ expanded : tt ) * } ; $ name : ident
+                                   : $ module : ident , $ ( $ rest : tt ) * )
+                                   => {
+                                   $ crate :: construct_runtime ! (
+                                   { $ ( $ preset ) * } ; {
+                                   $ ( $ expanded ) * $ name : $ module :: {
+                                   Module , Call , Storage , Event < T > ,
+                                   Config < T > } , } ; $ ( $ rest ) * ) ; } ;
+                                   (
+                                   { $ ( $ preset : tt ) * } ; {
+                                   $ ( $ expanded : tt ) * } ; $ name : ident
+                                   : $ module : ident :: {
+                                   default , $ (
+                                   $ modules : ident $ (
+                                   < $ modules_generic : ident $ (
+                                   , $ modules_instance : ident ) ? > ) * $ (
+                                   ( $ ( $ modules_args : ident ) , * ) ) * )
+                                   , * } , $ ( $ rest : tt ) * ) => {
+                                   $ crate :: construct_runtime ! (
+                                   { $ ( $ preset ) * } ; {
+                                   $ ( $ expanded ) * $ name : $ module :: {
+                                   Module , Call , Storage , Event < T > ,
+                                   Config < T > , $ (
+                                   $ modules $ (
+                                   < $ modules_generic $ (
+                                   , $ modules_instance ) ? > ) * $ (
+                                   ( $ ( $ modules_args ) , * ) ) * ) , * } ,
+                                   } ; $ ( $ rest ) * ) ; } ; (
+                                   { $ ( $ preset : tt ) * } ; {
+                                   $ ( $ expanded : tt ) * } ; $ name : ident
+                                   : $ module : ident :: {
+                                   $ (
+                                   $ modules : ident $ (
+                                   < $ modules_generic : ident > ) * $ (
+                                   ( $ ( $ modules_args : ident ) , * ) ) * )
+                                   , * } , $ ( $ rest : tt ) * ) => {
+                                   $ crate :: construct_runtime ! (
+                                   { $ ( $ preset ) * } ; {
+                                   $ ( $ expanded ) * $ name : $ module :: {
+                                   $ (
+                                   $ modules $ ( < $ modules_generic > ) * $ (
+                                   ( $ ( $ modules_args ) , * ) ) * ) , * } ,
+                                   } ; $ ( $ rest ) * ) ; } ; (
+                                   { $ ( $ preset : tt ) * } ; {
+                                   $ ( $ expanded : tt ) * } ; $ name : ident
+                                   : $ module : ident :: < $ module_instance :
+                                   ident > :: {
+                                   $ (
+                                   $ modules : ident $ (
+                                   < $ modules_generic : ident $ (
+                                   , $ modules_instance : ident ) ? > ) * $ (
+                                   ( $ ( $ modules_args : ident ) , * ) ) * )
+                                   , * } , $ ( $ rest : tt ) * ) => {
+                                   $ crate :: construct_runtime ! (
+                                   { $ ( $ preset ) * } ; {
+                                   $ ( $ expanded ) * $ name : $ module :: < $
+                                   module_instance > :: {
+                                   $ (
+                                   $ modules $ (
+                                   < $ modules_generic $ (
+                                   , $ modules_instance = $ module :: $
+                                   module_instance ) ? > ) * $ (
+                                   ( $ ( $ modules_args ) , * ) ) * ) , * } ,
+                                   } ; $ ( $ rest ) * ) ; } ; (
+                                   {
+                                   $ runtime : ident ; $ block : ident ; $
+                                   node_block : ty ; $ uncheckedextrinsic :
+                                   ident ; $ log_internal : ident < $ (
+                                   $ log_genarg : ty ) , + > ; } ; {
+                                   $ (
+                                   $ name : ident : $ module : ident :: $ (
+                                   < $ module_instance : ident > :: ) ? {
+                                   $ (
+                                   $ modules : ident $ (
+                                   < $ modules_generic : ident $ (
+                                   , I = $ modules_instance : path ) ? > ) * $
+                                   ( ( $ ( $ modules_args : ident ) , * ) ) *
+                                   ) , * } , ) * } ; ) => {
+                                   # [
+                                   derive ( Clone , Copy , PartialEq , Eq ) ]
+                                   # [
+                                   cfg_attr (
+                                   feature = "std" , derive ( Debug ) ) ] pub
+                                   struct $ runtime ; impl $ crate ::
+                                   runtime_primitives :: traits ::
+                                   GetNodeBlockType for $ runtime {
+                                   type NodeBlock = $ node_block ; } impl $
+                                   crate :: runtime_primitives :: traits ::
+                                   GetRuntimeBlockType for $ runtime {
+                                   type RuntimeBlock = $ block ; } $ crate ::
+                                   __decl_instance_import ! (
+                                   $ ( $ ( $ module < $ module_instance > ) ?
+                                   ) * ) ; $ crate :: __decl_outer_event ! (
+                                   $ runtime ; $ (
+                                   $ name : $ module :: $ (
+                                   < $ module_instance > :: ) ? {
+                                   $ (
+                                   $ modules $ (
+                                   < $ modules_generic $ (
+                                   , $ modules_instance ) ? > ) * ) , * } ) ,
+                                   * ) ; $ crate :: __decl_outer_origin ! (
+                                   $ runtime ; $ (
+                                   $ name : $ module :: $ (
+                                   < $ module_instance > :: ) ? {
+                                   $ (
+                                   $ modules $ (
+                                   < $ modules_generic $ (
+                                   , $ modules_instance ) ? > ) * ) , * } ) ,
+                                   * ) ; $ crate :: __decl_all_modules ! (
+                                   $ runtime ; ; {  } ; $ (
+                                   $ name : $ module :: $ (
+                                   < $ module_instance > :: ) ? {
+                                   $ ( $ modules ) , * } , ) * ) ; $ crate ::
+                                   __decl_outer_dispatch ! (
+                                   $ runtime ; ; $ (
+                                   $ name : $ module :: { $ ( $ modules ) , *
+                                   } ) , * ; ) ; $ crate ::
+                                   __decl_runtime_metadata ! (
+                                   $ runtime ; {  } ; $ (
+                                   $ name : $ module :: $ (
+                                   < $ module_instance > :: ) ? {
+                                   $ ( $ modules ) * } ) * ) ; $ crate ::
+                                   __decl_outer_log ! (
+                                   $ runtime ; $ log_internal < $ (
+                                   $ log_genarg ) , * > ; {  } ; $ (
+                                   $ name : $ module :: $ (
+                                   < $ module_instance > :: ) ? {
+                                   $ (
+                                   $ modules $ ( ( $ ( $ modules_args ) * ) )
+                                   * ) * } ) * ) ; $ crate ::
+                                   __decl_outer_config ! (
+                                   $ runtime ; {  } ; $ (
+                                   $ name : $ module :: $ (
+                                   < $ module_instance > :: ) ? {
+                                   $ (
+                                   $ modules $ (
+                                   < $ modules_generic $ (
+                                   , $ modules_instance ) ? > ) * ) , * } , )
+                                   * ) ; $ crate :: __decl_outer_inherent ! (
+                                   $ runtime ; $ block ; $ uncheckedextrinsic
+                                   ; ; $ (
+                                   $ name : $ module :: {
+                                   $ (
+                                   $ modules $ ( ( $ ( $ modules_args ) , * )
+                                   ) * ) , * } ) , * ; ) ; $ crate ::
+                                   __impl_outer_validate_unsigned ! (
+                                   $ runtime ; {  } ; $ (
+                                   $ name : $ module :: {
+                                   $ (
+                                   $ modules $ ( ( $ ( $ modules_args ) * ) )
+                                   * ) * } ) * ) ; });
+    /// A macro that generates a "__decl" private macro that transforms parts of the runtime definition
+    /// to feed them into a public "impl" macro which accepts the format
+    /// "pub enum $name for $runtime where system = $system".
+    ///
+    /// Used to define Event and Origin associated types.
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __create_decl_macro((
+                                     $ macro_name : ident , $ macro_outer_name
+                                     : ident , $ macro_enum_name : ident , $ d
+                                     : tt ) => {
+                                     # [ macro_export ] # [ doc ( hidden ) ]
+                                     macro_rules ! $ macro_name {
+                                     (
+                                     $ runtime : ident ; $ d (
+                                     $ name : ident : $ module : ident :: $ d
+                                     ( < $ module_instance : ident > :: ) ? {
+                                     $ d (
+                                     $ modules : ident $ d (
+                                     < $ modules_generic : ident $ d (
+                                     , $ modules_instance : path ) ? > ) , * )
+                                     , * } ) , * ) => {
+                                     $ d crate :: $ macro_name ! (
+                                     @ inner $ runtime ; ; {  } ; $ d (
+                                     $ name : $ module :: $ d (
+                                     < $ module_instance > :: ) ? {
+                                     $ d (
+                                     $ modules $ d (
+                                     < $ modules_generic $ d (
+                                     , $ modules_instance ) ? > ) * ) , * } ,
+                                     ) * ) ; } ; (
+                                     @ inner $ runtime : ident ; ; {
+                                     $ d ( $ parsed : tt ) * } ; System : $
+                                     module : ident :: {
+                                     $ d (
+                                     $ modules : ident $ d (
+                                     < $ modules_generic : ident > ) * ) , * }
+                                     , $ d ( $ rest : tt ) * ) => {
+                                     $ d crate :: $ macro_name ! (
+                                     @ inner $ runtime ; $ module ; {
+                                     $ d ( $ parsed ) * } ; $ d ( $ rest ) * )
+                                     ; } ; (
+                                     @ inner $ runtime : ident ; $ d (
+                                     $ system : ident ) ? ; {
+                                     $ d ( $ parsed : tt ) * } ; $ name :
+                                     ident : $ module : ident :: < $
+                                     module_instance : ident > :: {
+                                     $ macro_enum_name < $ event_generic :
+                                     ident , $ event_instance : path > $ d (
+                                     , $ ignore : ident $ d (
+                                     < $ ignor : ident $ d (
+                                     , $ ignore_instance : path ) ? > ) * ) *
+                                     } , $ d ( $ rest : tt ) * ) => {
+                                     $ d crate :: $ macro_name ! (
+                                     @ inner $ runtime ; $ d ( $ system ) ? ;
+                                     {
+                                     $ d ( $ parsed ) * $ module $
+                                     module_instance < $ event_generic , $
+                                     event_instance > , } ; $ d ( $ rest ) * )
+                                     ; } ; (
+                                     @ inner $ runtime : ident ; $ d (
+                                     $ system : ident ) ? ; {
+                                     $ d ( $ parsed : tt ) * } ; $ name :
+                                     ident : $ module : ident :: < $
+                                     module_instance : ident > :: {
+                                     $ macro_enum_name $ d (
+                                     < $ event_generic : ident > ) * $ d (
+                                     , $ ignore : ident $ d (
+                                     < $ ignor : ident $ d (
+                                     , $ ignore_instance : path ) ? > ) * ) *
+                                     } , $ d ( $ rest : tt ) * ) => {
+                                     compile_error ! {
+                                     concat ! {
+                                     "Module `" , stringify ! { $ name } ,
+                                     "` must have `" , stringify ! {
+                                     $ macro_enum_name } , "<T, I>`" ,
+                                     " but has `" , stringify ! {
+                                     $ macro_enum_name } $ d (
+                                     , "<" , stringify ! { $ event_generic } ,
+                                     ">" ) * , "`" ,
+                                     ": Instantiated modules must have " ,
+                                     stringify ! { $ macro_enum_name } ,
+                                     " generic over instance to be able to convert to outer "
+                                     , stringify ! { $ macro_enum_name } } } }
+                                     ; (
+                                     @ inner $ runtime : ident ; $ d (
+                                     $ system : ident ) ? ; {
+                                     $ d ( $ parsed : tt ) * } ; $ name :
+                                     ident : $ module : ident :: {
+                                     $ macro_enum_name $ d (
+                                     < $ event_generic : ident $ d (
+                                     , $ event_instance : path ) ? > ) * $ d (
+                                     , $ ignore : ident $ d (
+                                     < $ ignor : ident $ d (
+                                     , $ ignore_instance : path ) ? > ) * ) *
+                                     } , $ d ( $ rest : tt ) * ) => {
+                                     $ d crate :: $ macro_name ! (
+                                     @ inner $ runtime ; $ d ( $ system ) ? ;
+                                     {
+                                     $ d ( $ parsed ) * $ module $ d (
+                                     < $ event_generic $ d (
+                                     , $ event_instance ) ? > ) * , } ; $ d (
+                                     $ rest ) * ) ; } ; (
+                                     @ inner $ runtime : ident ; $ d (
+                                     $ system : ident ) ? ; {
+                                     $ d ( $ parsed : tt ) * } ; $ name :
+                                     ident : $ module : ident :: $ d (
+                                     < $ module_instance : ident > :: ) ? {
+                                     $ ignore : ident $ d (
+                                     < $ ignor : ident $ d (
+                                     , $ ignore_instance : path ) ? > ) * $ d
+                                     (
+                                     , $ modules : ident $ d (
+                                     < $ modules_generic : ident $ d (
+                                     , $ modules_instance : path ) ? > ) * ) *
+                                     } , $ d ( $ rest : tt ) * ) => {
+                                     $ d crate :: $ macro_name ! (
+                                     @ inner $ runtime ; $ d ( $ system ) ? ;
+                                     { $ d ( $ parsed ) * } ; $ name : $
+                                     module :: $ d ( < $ module_instance > ::
+                                     ) ? {
+                                     $ d (
+                                     $ modules $ d (
+                                     < $ modules_generic $ d (
+                                     , $ modules_instance ) ? > ) * ) , * } ,
+                                     $ d ( $ rest ) * ) ; } ; (
+                                     @ inner $ runtime : ident ; $ d (
+                                     $ system : ident ) ? ; {
+                                     $ d ( $ parsed : tt ) * } ; $ name :
+                                     ident : $ module : ident :: $ d (
+                                     < $ module_instance : ident > :: ) ? {  }
+                                     , $ d ( $ rest : tt ) * ) => {
+                                     $ d crate :: $ macro_name ! (
+                                     @ inner $ runtime ; $ d ( $ system ) ? ;
+                                     { $ d ( $ parsed ) * } ; $ d ( $ rest ) *
+                                     ) ; } ; (
+                                     @ inner $ runtime : ident ; $ system :
+                                     ident ; {
+                                     $ d (
+                                     $ parsed_modules : ident $ d (
+                                     $ instance : ident ) ? $ d (
+                                     < $ parsed_generic : ident $ d (
+                                     , $ parsed_instance_full_path : path ) ?
+                                     > ) * , ) * } ; ) => {
+                                     $ d crate :: paste :: item ! {
+                                     $ d crate :: $ macro_outer_name ! {
+                                     pub enum $ macro_enum_name for $ runtime
+                                     where system = $ system {
+                                     $ d (
+                                     [
+                                     < $ parsed_modules $ d ( _ $ instance ) ?
+                                     > ] $ d (
+                                     < $ parsed_generic $ d (
+                                     , $ parsed_instance_full_path ) ? > ) * ,
+                                     ) * } } } } } });
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __decl_outer_event((
+                                    $ runtime : ident ; $ (
+                                    $ name : ident : $ module : ident :: $ (
+                                    < $ module_instance : ident > :: ) ? {
+                                    $ (
+                                    $ modules : ident $ (
+                                    < $ modules_generic : ident $ (
+                                    , $ modules_instance : path ) ? > ) , * )
+                                    , * } ) , * ) => {
+                                    $ crate :: __decl_outer_event ! (
+                                    @ inner $ runtime ; ; {  } ; $ (
+                                    $ name : $ module :: $ (
+                                    < $ module_instance > :: ) ? {
+                                    $ (
+                                    $ modules $ (
+                                    < $ modules_generic $ (
+                                    , $ modules_instance ) ? > ) * ) , * } , )
+                                    * ) ; } ; (
+                                    @ inner $ runtime : ident ; ; {
+                                    $ ( $ parsed : tt ) * } ; System : $
+                                    module : ident :: {
+                                    $ (
+                                    $ modules : ident $ (
+                                    < $ modules_generic : ident > ) * ) , * }
+                                    , $ ( $ rest : tt ) * ) => {
+                                    $ crate :: __decl_outer_event ! (
+                                    @ inner $ runtime ; $ module ; {
+                                    $ ( $ parsed ) * } ; $ ( $ rest ) * ) ; }
+                                    ; (
+                                    @ inner $ runtime : ident ; $ (
+                                    $ system : ident ) ? ; {
+                                    $ ( $ parsed : tt ) * } ; $ name : ident :
+                                    $ module : ident :: < $ module_instance :
+                                    ident > :: {
+                                    Event < $ event_generic : ident , $
+                                    event_instance : path > $ (
+                                    , $ ignore : ident $ (
+                                    < $ ignor : ident $ (
+                                    , $ ignore_instance : path ) ? > ) * ) * }
+                                    , $ ( $ rest : tt ) * ) => {
+                                    $ crate :: __decl_outer_event ! (
+                                    @ inner $ runtime ; $ ( $ system ) ? ; {
+                                    $ ( $ parsed ) * $ module $
+                                    module_instance < $ event_generic , $
+                                    event_instance > , } ; $ ( $ rest ) * ) ;
+                                    } ; (
+                                    @ inner $ runtime : ident ; $ (
+                                    $ system : ident ) ? ; {
+                                    $ ( $ parsed : tt ) * } ; $ name : ident :
+                                    $ module : ident :: < $ module_instance :
+                                    ident > :: {
+                                    Event $ ( < $ event_generic : ident > ) *
+                                    $ (
+                                    , $ ignore : ident $ (
+                                    < $ ignor : ident $ (
+                                    , $ ignore_instance : path ) ? > ) * ) * }
+                                    , $ ( $ rest : tt ) * ) => {
+                                    compile_error ! {
+                                    concat ! {
+                                    "Module `" , stringify ! { $ name } ,
+                                    "` must have `" , stringify ! { Event } ,
+                                    "<T, I>`" , " but has `" , stringify ! {
+                                    Event } $ (
+                                    , "<" , stringify ! { $ event_generic } ,
+                                    ">" ) * , "`" ,
+                                    ": Instantiated modules must have " ,
+                                    stringify ! { Event } ,
+                                    " generic over instance to be able to convert to outer "
+                                    , stringify ! { Event } } } } ; (
+                                    @ inner $ runtime : ident ; $ (
+                                    $ system : ident ) ? ; {
+                                    $ ( $ parsed : tt ) * } ; $ name : ident :
+                                    $ module : ident :: {
+                                    Event $ (
+                                    < $ event_generic : ident $ (
+                                    , $ event_instance : path ) ? > ) * $ (
+                                    , $ ignore : ident $ (
+                                    < $ ignor : ident $ (
+                                    , $ ignore_instance : path ) ? > ) * ) * }
+                                    , $ ( $ rest : tt ) * ) => {
+                                    $ crate :: __decl_outer_event ! (
+                                    @ inner $ runtime ; $ ( $ system ) ? ; {
+                                    $ ( $ parsed ) * $ module $ (
+                                    < $ event_generic $ ( , $ event_instance )
+                                    ? > ) * , } ; $ ( $ rest ) * ) ; } ; (
+                                    @ inner $ runtime : ident ; $ (
+                                    $ system : ident ) ? ; {
+                                    $ ( $ parsed : tt ) * } ; $ name : ident :
+                                    $ module : ident :: $ (
+                                    < $ module_instance : ident > :: ) ? {
+                                    $ ignore : ident $ (
+                                    < $ ignor : ident $ (
+                                    , $ ignore_instance : path ) ? > ) * $ (
+                                    , $ modules : ident $ (
+                                    < $ modules_generic : ident $ (
+                                    , $ modules_instance : path ) ? > ) * ) *
+                                    } , $ ( $ rest : tt ) * ) => {
+                                    $ crate :: __decl_outer_event ! (
+                                    @ inner $ runtime ; $ ( $ system ) ? ; {
+                                    $ ( $ parsed ) * } ; $ name : $ module ::
+                                    $ ( < $ module_instance > :: ) ? {
+                                    $ (
+                                    $ modules $ (
+                                    < $ modules_generic $ (
+                                    , $ modules_instance ) ? > ) * ) , * } , $
+                                    ( $ rest ) * ) ; } ; (
+                                    @ inner $ runtime : ident ; $ (
+                                    $ system : ident ) ? ; {
+                                    $ ( $ parsed : tt ) * } ; $ name : ident :
+                                    $ module : ident :: $ (
+                                    < $ module_instance : ident > :: ) ? {  }
+                                    , $ ( $ rest : tt ) * ) => {
+                                    $ crate :: __decl_outer_event ! (
+                                    @ inner $ runtime ; $ ( $ system ) ? ; {
+                                    $ ( $ parsed ) * } ; $ ( $ rest ) * ) ; }
+                                    ; (
+                                    @ inner $ runtime : ident ; $ system :
+                                    ident ; {
+                                    $ (
+                                    $ parsed_modules : ident $ (
+                                    $ instance : ident ) ? $ (
+                                    < $ parsed_generic : ident $ (
+                                    , $ parsed_instance_full_path : path ) ? >
+                                    ) * , ) * } ; ) => {
+                                    $ crate :: paste :: item ! {
+                                    $ crate :: impl_outer_event ! {
+                                    pub enum Event for $ runtime where system
+                                    = $ system {
+                                    $ (
+                                    [
+                                    < $ parsed_modules $ ( _ $ instance ) ? >
+                                    ] $ (
+                                    < $ parsed_generic $ (
+                                    , $ parsed_instance_full_path ) ? > ) * ,
+                                    ) * } } } });
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __decl_outer_origin((
+                                     $ runtime : ident ; $ (
+                                     $ name : ident : $ module : ident :: $ (
+                                     < $ module_instance : ident > :: ) ? {
+                                     $ (
+                                     $ modules : ident $ (
+                                     < $ modules_generic : ident $ (
+                                     , $ modules_instance : path ) ? > ) , * )
+                                     , * } ) , * ) => {
+                                     $ crate :: __decl_outer_origin ! (
+                                     @ inner $ runtime ; ; {  } ; $ (
+                                     $ name : $ module :: $ (
+                                     < $ module_instance > :: ) ? {
+                                     $ (
+                                     $ modules $ (
+                                     < $ modules_generic $ (
+                                     , $ modules_instance ) ? > ) * ) , * } ,
+                                     ) * ) ; } ; (
+                                     @ inner $ runtime : ident ; ; {
+                                     $ ( $ parsed : tt ) * } ; System : $
+                                     module : ident :: {
+                                     $ (
+                                     $ modules : ident $ (
+                                     < $ modules_generic : ident > ) * ) , * }
+                                     , $ ( $ rest : tt ) * ) => {
+                                     $ crate :: __decl_outer_origin ! (
+                                     @ inner $ runtime ; $ module ; {
+                                     $ ( $ parsed ) * } ; $ ( $ rest ) * ) ; }
+                                     ; (
+                                     @ inner $ runtime : ident ; $ (
+                                     $ system : ident ) ? ; {
+                                     $ ( $ parsed : tt ) * } ; $ name : ident
+                                     : $ module : ident :: < $ module_instance
+                                     : ident > :: {
+                                     Origin < $ event_generic : ident , $
+                                     event_instance : path > $ (
+                                     , $ ignore : ident $ (
+                                     < $ ignor : ident $ (
+                                     , $ ignore_instance : path ) ? > ) * ) *
+                                     } , $ ( $ rest : tt ) * ) => {
+                                     $ crate :: __decl_outer_origin ! (
+                                     @ inner $ runtime ; $ ( $ system ) ? ; {
+                                     $ ( $ parsed ) * $ module $
+                                     module_instance < $ event_generic , $
+                                     event_instance > , } ; $ ( $ rest ) * ) ;
+                                     } ; (
+                                     @ inner $ runtime : ident ; $ (
+                                     $ system : ident ) ? ; {
+                                     $ ( $ parsed : tt ) * } ; $ name : ident
+                                     : $ module : ident :: < $ module_instance
+                                     : ident > :: {
+                                     Origin $ ( < $ event_generic : ident > )
+                                     * $ (
+                                     , $ ignore : ident $ (
+                                     < $ ignor : ident $ (
+                                     , $ ignore_instance : path ) ? > ) * ) *
+                                     } , $ ( $ rest : tt ) * ) => {
+                                     compile_error ! {
+                                     concat ! {
+                                     "Module `" , stringify ! { $ name } ,
+                                     "` must have `" , stringify ! { Origin }
+                                     , "<T, I>`" , " but has `" , stringify !
+                                     { Origin } $ (
+                                     , "<" , stringify ! { $ event_generic } ,
+                                     ">" ) * , "`" ,
+                                     ": Instantiated modules must have " ,
+                                     stringify ! { Origin } ,
+                                     " generic over instance to be able to convert to outer "
+                                     , stringify ! { Origin } } } } ; (
+                                     @ inner $ runtime : ident ; $ (
+                                     $ system : ident ) ? ; {
+                                     $ ( $ parsed : tt ) * } ; $ name : ident
+                                     : $ module : ident :: {
+                                     Origin $ (
+                                     < $ event_generic : ident $ (
+                                     , $ event_instance : path ) ? > ) * $ (
+                                     , $ ignore : ident $ (
+                                     < $ ignor : ident $ (
+                                     , $ ignore_instance : path ) ? > ) * ) *
+                                     } , $ ( $ rest : tt ) * ) => {
+                                     $ crate :: __decl_outer_origin ! (
+                                     @ inner $ runtime ; $ ( $ system ) ? ; {
+                                     $ ( $ parsed ) * $ module $ (
+                                     < $ event_generic $ ( , $ event_instance
+                                     ) ? > ) * , } ; $ ( $ rest ) * ) ; } ; (
+                                     @ inner $ runtime : ident ; $ (
+                                     $ system : ident ) ? ; {
+                                     $ ( $ parsed : tt ) * } ; $ name : ident
+                                     : $ module : ident :: $ (
+                                     < $ module_instance : ident > :: ) ? {
+                                     $ ignore : ident $ (
+                                     < $ ignor : ident $ (
+                                     , $ ignore_instance : path ) ? > ) * $ (
+                                     , $ modules : ident $ (
+                                     < $ modules_generic : ident $ (
+                                     , $ modules_instance : path ) ? > ) * ) *
+                                     } , $ ( $ rest : tt ) * ) => {
+                                     $ crate :: __decl_outer_origin ! (
+                                     @ inner $ runtime ; $ ( $ system ) ? ; {
+                                     $ ( $ parsed ) * } ; $ name : $ module ::
+                                     $ ( < $ module_instance > :: ) ? {
+                                     $ (
+                                     $ modules $ (
+                                     < $ modules_generic $ (
+                                     , $ modules_instance ) ? > ) * ) , * } ,
+                                     $ ( $ rest ) * ) ; } ; (
+                                     @ inner $ runtime : ident ; $ (
+                                     $ system : ident ) ? ; {
+                                     $ ( $ parsed : tt ) * } ; $ name : ident
+                                     : $ module : ident :: $ (
+                                     < $ module_instance : ident > :: ) ? {  }
+                                     , $ ( $ rest : tt ) * ) => {
+                                     $ crate :: __decl_outer_origin ! (
+                                     @ inner $ runtime ; $ ( $ system ) ? ; {
+                                     $ ( $ parsed ) * } ; $ ( $ rest ) * ) ; }
+                                     ; (
+                                     @ inner $ runtime : ident ; $ system :
+                                     ident ; {
+                                     $ (
+                                     $ parsed_modules : ident $ (
+                                     $ instance : ident ) ? $ (
+                                     < $ parsed_generic : ident $ (
+                                     , $ parsed_instance_full_path : path ) ?
+                                     > ) * , ) * } ; ) => {
+                                     $ crate :: paste :: item ! {
+                                     $ crate :: impl_outer_origin ! {
+                                     pub enum Origin for $ runtime where
+                                     system = $ system {
+                                     $ (
+                                     [
+                                     < $ parsed_modules $ ( _ $ instance ) ? >
+                                     ] $ (
+                                     < $ parsed_generic $ (
+                                     , $ parsed_instance_full_path ) ? > ) * ,
+                                     ) * } } } });
+    /// A macro that defines all modules as an associated types of the Runtime type.
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __decl_all_modules((
+                                    $ runtime : ident ; ; {
+                                    $ ( $ parsed : tt ) * } ; System : $
+                                    module : ident :: {
+                                    Module $ ( , $ modules : ident ) * } , $ (
+                                    $ rest : tt ) * ) => {
+                                    $ crate :: __decl_all_modules ! (
+                                    $ runtime ; $ module ; { $ ( $ parsed ) *
+                                    } ; $ ( $ rest ) * ) ; } ; (
+                                    $ runtime : ident ; $ ( $ system : ident )
+                                    ? ; { $ ( $ parsed : tt ) * } ; $ name :
+                                    ident : $ module : ident :: $ (
+                                    < $ module_instance : ident > :: ) ? {
+                                    Module $ ( , $ modules : ident ) * } , $ (
+                                    $ rest : tt ) * ) => {
+                                    $ crate :: __decl_all_modules ! (
+                                    $ runtime ; $ ( $ system ) ? ; {
+                                    $ ( $ parsed ) * $ module :: $ name $ (
+                                    < $ module_instance > ) ? , } ; $ ( $ rest
+                                    ) * ) ; } ; (
+                                    $ runtime : ident ; $ ( $ system : ident )
+                                    ? ; { $ ( $ parsed : tt ) * } ; $ name :
+                                    ident : $ module : ident :: $ (
+                                    < $ module_instance : ident > :: ) ? {
+                                    $ ignore : ident $ ( , $ modules : ident )
+                                    * } , $ ( $ rest : tt ) * ) => {
+                                    $ crate :: __decl_all_modules ! (
+                                    $ runtime ; $ ( $ system ) ? ; {
+                                    $ ( $ parsed ) * } ; $ name : $ module ::
+                                    { $ ( $ modules ) , * } , $ ( $ rest ) * )
+                                    ; } ; (
+                                    $ runtime : ident ; $ ( $ system : ident )
+                                    ? ; { $ ( $ parsed : tt ) * } ; $ name :
+                                    ident : $ module : ident :: $ (
+                                    < $ module_instance : ident > :: ) ? {  }
+                                    , $ ( $ rest : tt ) * ) => {
+                                    $ crate :: __decl_all_modules ! (
+                                    $ runtime ; $ ( $ system ) ? ; {
+                                    $ ( $ parsed ) * } ; $ ( $ rest ) * ) ; }
+                                    ; (
+                                    $ runtime : ident ; $ system : ident ; {
+                                    $ (
+                                    $ parsed_module : ident :: $ parsed_name :
+                                    ident $ ( < $ instance : ident > ) ? , ) *
+                                    } ; ) => {
+                                    pub type System = system :: Module < $
+                                    runtime > ; $ (
+                                    pub type $ parsed_name = $ parsed_module
+                                    :: Module < $ runtime $ (
+                                    , $ parsed_module :: $ instance ) ? > ; )
+                                    * type AllModules = (
+                                    $ ( $ parsed_name , ) * ) ; });
+    /// A macro that defines the Call enum to represent calls to functions in the modules included
+    /// in the runtime (by wrapping the values of all FooModule::Call enums).
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __decl_outer_dispatch((
+                                       $ runtime : ident ; $ (
+                                       $ parsed_modules : ident :: $
+                                       parsed_name : ident ) , * ; System : $
+                                       module : ident :: {
+                                       $ ignore : ident $ (
+                                       < $ ignor : ident > ) * $ (
+                                       , $ modules : ident $ (
+                                       < $ modules_generic : ident > ) * ) * }
+                                       $ (
+                                       , $ rest_name : ident : $ rest_module :
+                                       ident :: {
+                                       $ (
+                                       $ rest_modules : ident $ (
+                                       < $ rest_modules_generic : ident > ) *
+                                       ) , * } ) * ; ) => {
+                                       $ crate :: __decl_outer_dispatch ! (
+                                       $ runtime ; $ (
+                                       $ parsed_modules :: $ parsed_name ) , *
+                                       ; $ (
+                                       $ rest_name : $ rest_module :: {
+                                       $ (
+                                       $ rest_modules $ (
+                                       < $ rest_modules_generic > ) * ) , * }
+                                       ) , * ; ) ; } ; (
+                                       $ runtime : ident ; $ (
+                                       $ parsed_modules : ident :: $
+                                       parsed_name : ident ) , * ; $ name :
+                                       ident : $ module : ident :: {
+                                       Call $ (
+                                       , $ modules : ident $ (
+                                       < $ modules_generic : ident > ) * ) * }
+                                       $ (
+                                       , $ rest_name : ident : $ rest_module :
+                                       ident :: {
+                                       $ (
+                                       $ rest_modules : ident $ (
+                                       < $ rest_modules_generic : ident > ) *
+                                       ) , * } ) * ; ) => {
+                                       $ crate :: __decl_outer_dispatch ! (
+                                       $ runtime ; $ (
+                                       $ parsed_modules :: $ parsed_name , ) *
+                                       $ module :: $ name ; $ (
+                                       $ rest_name : $ rest_module :: {
+                                       $ (
+                                       $ rest_modules $ (
+                                       < $ rest_modules_generic > ) * ) , * }
+                                       ) , * ; ) ; } ; (
+                                       $ runtime : ident ; $ (
+                                       $ parsed_modules : ident :: $
+                                       parsed_name : ident ) , * ; $ name :
+                                       ident : $ module : ident :: {
+                                       $ ignore : ident $ (
+                                       < $ ignor : ident > ) * $ (
+                                       , $ modules : ident $ (
+                                       < $ modules_generic : ident > ) * ) * }
+                                       $ (
+                                       , $ rest_name : ident : $ rest_module :
+                                       ident :: {
+                                       $ (
+                                       $ rest_modules : ident $ (
+                                       < $ rest_modules_generic : ident > ) *
+                                       ) , * } ) * ; ) => {
+                                       $ crate :: __decl_outer_dispatch ! (
+                                       $ runtime ; $ (
+                                       $ parsed_modules :: $ parsed_name ) , *
+                                       ; $ name : $ module :: {
+                                       $ (
+                                       $ modules $ ( < $ modules_generic > ) *
+                                       ) , * } $ (
+                                       , $ rest_name : $ rest_module :: {
+                                       $ (
+                                       $ rest_modules $ (
+                                       < $ rest_modules_generic > ) * ) , * }
+                                       ) * ; ) ; } ; (
+                                       $ runtime : ident ; $ (
+                                       $ parsed_modules : ident :: $
+                                       parsed_name : ident ) , * ; $ name :
+                                       ident : $ module : ident :: {  } $ (
+                                       , $ rest_name : ident : $ rest_module :
+                                       ident :: {
+                                       $ (
+                                       $ rest_modules : ident $ (
+                                       < $ rest_modules_generic : ident > ) *
+                                       ) , * } ) * ; ) => {
+                                       $ crate :: __decl_outer_dispatch ! (
+                                       $ runtime ; $ (
+                                       $ parsed_modules :: $ parsed_name ) , *
+                                       ; $ (
+                                       $ rest_name : $ rest_module :: {
+                                       $ (
+                                       $ rest_modules $ (
+                                       < $ rest_modules_generic > ) * ) , * }
+                                       ) , * ; ) ; } ; (
+                                       $ runtime : ident ; $ (
+                                       $ parsed_modules : ident :: $
+                                       parsed_name : ident ) , * ; ; ) => {
+                                       $ crate :: impl_outer_dispatch ! (
+                                       pub enum Call for $ runtime where
+                                       origin : Origin {
+                                       $ ( $ parsed_modules :: $ parsed_name ,
+                                       ) * } ) ; } ;);
+    /// A private macro that generates metadata() method for the runtime. See impl_runtime_metadata macro.
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __decl_runtime_metadata((
+                                         $ runtime : ident ; {
+                                         $ ( $ parsed : tt ) * } ; $ (
+                                         {
+                                         leading_module : $ (
+                                         $ leading_module : ident ) * } ) ? $
+                                         name : ident : $ module : ident :: $
+                                         ( < $ module_instance : ident > :: )
+                                         ? { Module $ ( $ modules : ident ) *
+                                         } $ ( $ rest : tt ) * ) => {
+                                         $ crate :: __decl_runtime_metadata !
+                                         (
+                                         $ runtime ; {
+                                         $ ( $ parsed ) * $ module $ (
+                                         < $ module_instance > ) ? {
+                                         $ ( $ ( $ leading_module ) * ) ? $ (
+                                         $ modules ) * } } ; $ ( $ rest ) * )
+                                         ; } ; (
+                                         $ runtime : ident ; {
+                                         $ ( $ parsed : tt ) * } ; $ (
+                                         {
+                                         leading_module : $ (
+                                         $ leading_module : ident ) * } ) ? $
+                                         name : ident : $ module : ident :: $
+                                         ( < $ module_instance : ident > :: )
+                                         ? {
+                                         $ other_module : ident $ (
+                                         $ modules : ident ) * } $ (
+                                         $ rest : tt ) * ) => {
+                                         $ crate :: __decl_runtime_metadata !
+                                         (
+                                         $ runtime ; { $ ( $ parsed ) * } ; {
+                                         leading_module : $ (
+                                         $ ( $ leading_module ) * ) ? $
+                                         other_module } $ name : $ module :: $
+                                         ( < $ module_instance > :: ) ? {
+                                         $ ( $ modules ) * } $ ( $ rest ) * )
+                                         ; } ; (
+                                         $ runtime : ident ; {
+                                         $ ( $ parsed : tt ) * } ; $ (
+                                         {
+                                         leading_module : $ (
+                                         $ leading_module : ident ) * } ) ? $
+                                         name : ident : $ module : ident :: $
+                                         ( < $ module_instance : ident > :: )
+                                         ? {  } $ ( $ rest : tt ) * ) => {
+                                         $ crate :: __decl_runtime_metadata !
+                                         (
+                                         $ runtime ; { $ ( $ parsed ) * } ; $
+                                         ( $ rest ) * ) ; } ; (
+                                         $ runtime : ident ; {
+                                         $ (
+                                         $ parsed_modules : ident $ (
+                                         < $ module_instance : ident > ) ? {
+                                         $ ( $ withs : ident ) * } ) * } ; )
+                                         => {
+                                         $ crate :: impl_runtime_metadata ! (
+                                         for $ runtime with modules $ (
+                                         $ parsed_modules :: Module $ (
+                                         < $ module_instance > ) ? with $ (
+                                         $ withs ) * , ) * ) ; });
+    /// A private macro that generates Log enum for the runtime. See impl_outer_log macro.
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __decl_outer_log((
+                                  $ runtime : ident ; $ log_internal : ident <
+                                  $ ( $ log_genarg : ty ) , + > ; {
+                                  $ ( $ parsed : tt ) * } ; $ name : ident : $
+                                  module : ident :: $ (
+                                  < $ module_instance : ident > :: ) ? {
+                                  Log ( $ ( $ args : ident ) * ) $ (
+                                  $ modules : ident $ (
+                                  ( $ ( $ modules_args : ident ) * ) ) * ) * }
+                                  $ ( $ rest : tt ) * ) => {
+                                  $ crate :: __decl_outer_log ! (
+                                  $ runtime ; $ log_internal < $ (
+                                  $ log_genarg ) , * > ; {
+                                  $ ( $ parsed ) * $ module $ (
+                                  < $ module_instance > ) ? ( $ ( $ args ) * )
+                                  } ; $ ( $ rest ) * ) ; } ; (
+                                  $ runtime : ident ; $ log_internal : ident <
+                                  $ ( $ log_genarg : ty ) , + > ; {
+                                  $ ( $ parsed : tt ) * } ; $ name : ident : $
+                                  module : ident :: $ (
+                                  < $ module_instance : ident > :: ) ? {
+                                  $ ignore : ident $ (
+                                  ( $ ( $ args_ignore : ident ) * ) ) * $ (
+                                  $ modules : ident $ (
+                                  ( $ ( $ modules_args : ident ) * ) ) * ) * }
+                                  $ ( $ rest : tt ) * ) => {
+                                  $ crate :: __decl_outer_log ! (
+                                  $ runtime ; $ log_internal < $ (
+                                  $ log_genarg ) , * > ; { $ ( $ parsed ) * }
+                                  ; $ name : $ module :: $ (
+                                  < $ module_instance > :: ) ? {
+                                  $ (
+                                  $ modules $ ( ( $ ( $ modules_args ) * ) ) *
+                                  ) * } $ ( $ rest ) * ) ; } ; (
+                                  $ runtime : ident ; $ log_internal : ident <
+                                  $ ( $ log_genarg : ty ) , + > ; {
+                                  $ ( $ parsed : tt ) * } ; $ name : ident : $
+                                  module : ident :: $ (
+                                  < $ module_instance : ident > :: ) ? {  } $
+                                  ( $ rest : tt ) * ) => {
+                                  $ crate :: __decl_outer_log ! (
+                                  $ runtime ; $ log_internal < $ (
+                                  $ log_genarg ) , * > ; { $ ( $ parsed ) * }
+                                  ; $ ( $ rest ) * ) ; } ; (
+                                  $ runtime : ident ; $ log_internal : ident <
+                                  $ ( $ log_genarg : ty ) , + > ; {
+                                  $ (
+                                  $ parsed_modules : ident $ (
+                                  < $ parsed_instance : ident > ) ? (
+                                  $ ( $ parsed_args : ident ) * ) ) * } ; ) =>
+                                  {
+                                  $ crate :: paste :: item ! {
+                                  $ crate :: runtime_primitives ::
+                                  impl_outer_log ! (
+                                  pub enum Log (
+                                  $ log_internal : DigestItem < $ (
+                                  $ log_genarg ) , * > ) for $ runtime {
+                                  $ (
+                                  [
+                                  < $ parsed_modules $ ( _ $ parsed_instance )
+                                  ? > ] $ (
+                                  < $ parsed_modules :: $ parsed_instance > )
+                                  ? ( $ ( $ parsed_args ) , * ) ) , * } ) ; }
+                                  } ;);
+    /// A private macro that generates GenesisConfig for the runtime. See impl_outer_config macro.
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __decl_outer_config((
+                                     $ runtime : ident ; {
+                                     $ ( $ parsed : tt ) * } ; $ name : ident
+                                     : $ module : ident :: $ (
+                                     < $ module_instance : ident > :: ) ? {
+                                     Config $ (
+                                     < $ config_generic : ident $ (
+                                     , $ config_instance : path ) ? > ) ? $ (
+                                     , $ modules : ident $ (
+                                     < $ modules_generic : ident $ (
+                                     , $ modules_instance : path ) ? > ) * ) *
+                                     } , $ ( $ rest : tt ) * ) => {
+                                     $ crate :: __decl_outer_config ! (
+                                     $ runtime ; {
+                                     $ ( $ parsed ) * $ module :: $ name $ (
+                                     $ module_instance ) ? $ (
+                                     < $ config_generic $ (
+                                     , $ config_instance ) ? > ) ? , } ; $ (
+                                     $ rest ) * ) ; } ; (
+                                     $ runtime : ident ; {
+                                     $ ( $ parsed : tt ) * } ; $ name : ident
+                                     : $ module : ident :: $ (
+                                     < $ module_instance : ident > :: ) ? {
+                                     $ ignore : ident $ (
+                                     < $ ignor : ident $ (
+                                     , $ ignore_instance : path ) ? > ) * $ (
+                                     , $ modules : ident $ (
+                                     < $ modules_generic : ident $ (
+                                     , $ modules_instance : path ) ? > ) * ) *
+                                     } , $ ( $ rest : tt ) * ) => {
+                                     $ crate :: __decl_outer_config ! (
+                                     $ runtime ; { $ ( $ parsed ) * } ; $ name
+                                     : $ module :: $ (
+                                     < $ module_instance > :: ) ? {
+                                     $ (
+                                     $ modules $ (
+                                     < $ modules_generic $ (
+                                     , $ modules_instance ) ? > ) * ) , * } ,
+                                     $ ( $ rest ) * ) ; } ; (
+                                     $ runtime : ident ; {
+                                     $ ( $ parsed : tt ) * } ; $ name : ident
+                                     : $ module : ident :: $ (
+                                     < $ module_instance : ident > :: ) ? {  }
+                                     , $ ( $ rest : tt ) * ) => {
+                                     $ crate :: __decl_outer_config ! (
+                                     $ runtime ; { $ ( $ parsed ) * } ; $ (
+                                     $ rest ) * ) ; } ; (
+                                     $ runtime : ident ; {
+                                     $ (
+                                     $ parsed_modules : ident :: $ parsed_name
+                                     : ident $ ( $ parsed_instance : ident ) ?
+                                     $ (
+                                     < $ parsed_generic : ident $ (
+                                     , $ parsed_instance_full_path : path ) ?
+                                     > ) * , ) * } ; ) => {
+                                     $ crate :: paste :: item ! {
+                                     $ crate :: runtime_primitives ::
+                                     impl_outer_config ! (
+                                     pub struct GenesisConfig for $ runtime {
+                                     $ (
+                                     [ < $ parsed_name Config > ] => [
+                                     < $ parsed_modules $ (
+                                     _ $ parsed_instance ) ? > ] $ (
+                                     < $ parsed_generic $ (
+                                     , $ parsed_instance_full_path ) ? > ) * ,
+                                     ) * } ) ; } } ;);
+    /// A private macro that generates check_inherents() implementation for the runtime.
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __decl_outer_inherent((
+                                       $ runtime : ident ; $ block : ident ; $
+                                       uncheckedextrinsic : ident ; $ (
+                                       $ parsed_name : ident :: $ parsed_call
+                                       : ident ) , * ; $ name : ident : $
+                                       module : ident :: {
+                                       Inherent $ (
+                                       , $ modules : ident $ (
+                                       ( $ ( $ modules_call : ident ) * ) ) *
+                                       ) * } $ (
+                                       , $ rest_name : ident : $ rest_module :
+                                       ident :: {
+                                       $ (
+                                       $ rest_modules : ident $ (
+                                       ( $ ( $ rest_call : ident ) * ) ) * ) ,
+                                       * } ) * ; ) => {
+                                       $ crate :: __decl_outer_inherent ! (
+                                       $ runtime ; $ block ; $
+                                       uncheckedextrinsic ; $ (
+                                       $ parsed_name :: $ parsed_call , ) * $
+                                       name :: $ name ; $ (
+                                       $ rest_name : $ rest_module :: {
+                                       $ (
+                                       $ rest_modules $ (
+                                       ( $ ( $ rest_call ) * ) ) * ) , * } ) ,
+                                       * ; ) ; } ; (
+                                       $ runtime : ident ; $ block : ident ; $
+                                       uncheckedextrinsic : ident ; $ (
+                                       $ parsed_name : ident :: $ parsed_call
+                                       : ident ) , * ; $ name : ident : $
+                                       module : ident :: {
+                                       Inherent ( $ call : ident ) $ (
+                                       , $ modules : ident $ (
+                                       ( $ ( $ modules_call : ident ) * ) ) *
+                                       ) * } $ (
+                                       , $ rest_name : ident : $ rest_module :
+                                       ident :: {
+                                       $ (
+                                       $ rest_modules : ident $ (
+                                       ( $ ( $ rest_call : ident ) * ) ) * ) ,
+                                       * } ) * ; ) => {
+                                       $ crate :: __decl_outer_inherent ! (
+                                       $ runtime ; $ block ; $
+                                       uncheckedextrinsic ; $ (
+                                       $ parsed_name :: $ parsed_call , ) * $
+                                       name :: $ call ; $ (
+                                       $ rest_name : $ rest_module :: {
+                                       $ (
+                                       $ rest_modules $ (
+                                       ( $ ( $ rest_call ) * ) ) * ) , * } ) ,
+                                       * ; ) ; } ; (
+                                       $ runtime : ident ; $ block : ident ; $
+                                       uncheckedextrinsic : ident ; $ (
+                                       $ parsed_name : ident :: $ parsed_call
+                                       : ident ) , * ; $ name : ident : $
+                                       module : ident :: {
+                                       $ ignore : ident $ (
+                                       ( $ ( $ ignor : ident ) * ) ) * $ (
+                                       , $ modules : ident $ (
+                                       ( $ ( $ modules_call : ident ) * ) ) *
+                                       ) * } $ (
+                                       , $ rest_name : ident : $ rest_module :
+                                       ident :: {
+                                       $ (
+                                       $ rest_modules : ident $ (
+                                       ( $ ( $ rest_call : ident ) * ) ) * ) ,
+                                       * } ) * ; ) => {
+                                       $ crate :: __decl_outer_inherent ! (
+                                       $ runtime ; $ block ; $
+                                       uncheckedextrinsic ; $ (
+                                       $ parsed_name :: $ parsed_call ) , * ;
+                                       $ name : $ module :: {
+                                       $ (
+                                       $ modules $ (
+                                       ( $ ( $ modules_call ) * ) ) * ) , * }
+                                       $ (
+                                       , $ rest_name : $ rest_module :: {
+                                       $ (
+                                       $ rest_modules $ (
+                                       ( $ ( $ rest_call ) * ) ) * ) , * } ) *
+                                       ; ) ; } ; (
+                                       $ runtime : ident ; $ block : ident ; $
+                                       uncheckedextrinsic : ident ; $ (
+                                       $ parsed_name : ident :: $ parsed_call
+                                       : ident ) , * ; $ name : ident : $
+                                       module : ident :: {  } $ (
+                                       , $ rest_name : ident : $ rest_module :
+                                       ident :: {
+                                       $ (
+                                       $ rest_modules : ident $ (
+                                       ( $ ( $ rest_call : ident ) * ) ) * ) ,
+                                       * } ) * ; ) => {
+                                       $ crate :: __decl_outer_inherent ! (
+                                       $ runtime ; $ block ; $
+                                       uncheckedextrinsic ; $ (
+                                       $ parsed_name :: $ parsed_call ) , * ;
+                                       $ (
+                                       $ rest_name : $ rest_module :: {
+                                       $ (
+                                       $ rest_modules $ (
+                                       ( $ ( $ rest_call ) * ) ) * ) , * } ) ,
+                                       * ; ) ; } ; (
+                                       $ runtime : ident ; $ block : ident ; $
+                                       uncheckedextrinsic : ident ; $ (
+                                       $ parsed_name : ident :: $ parsed_call
+                                       : ident ) , * ; ; ) => {
+                                       $ crate :: impl_outer_inherent ! (
+                                       impl Inherents where Block = $ block ,
+                                       UncheckedExtrinsic = $
+                                       uncheckedextrinsic {
+                                       $ ( $ parsed_name : $ parsed_call , ) *
+                                       } ) ; } ;);
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __decl_instance_import((
+                                        $ (
+                                        $ module : ident < $ instance : ident
+                                        > ) * ) => {
+                                        $ crate :: paste :: item ! {
+                                        $ (
+                                        use $ module as [
+                                        < $ module _ $ instance > ] ; ) * } }
+                                        ;);
+    /// A private macro that calls impl_outer_validate_unsigned for Call.
+    #[macro_export]
+    #[doc(hidden)]
+    macro_rules! __impl_outer_validate_unsigned((
+                                                $ runtime : ident ; {
+                                                $ ( $ parsed : tt ) * } ; $
+                                                name : ident : $ module :
+                                                ident :: $ (
+                                                < $ module_instance : ident >
+                                                :: ) ? {
+                                                ValidateUnsigned $ (
+                                                $ modules : ident $ (
+                                                (
+                                                $ ( $ modules_args : ident ) *
+                                                ) ) * ) * } $ ( $ rest : tt )
+                                                * ) => {
+                                                $ crate ::
+                                                __impl_outer_validate_unsigned
+                                                ! (
+                                                $ runtime ; {
+                                                $ ( $ parsed ) * $ name } ; $
+                                                ( $ rest ) * ) ; } ; (
+                                                $ runtime : ident ; {
+                                                $ ( $ parsed : tt ) * } ; $
+                                                name : ident : $ module :
+                                                ident :: $ (
+                                                < $ module_instance : ident >
+                                                :: ) ? {
+                                                $ ignore : ident $ (
+                                                (
+                                                $ ( $ args_ignore : ident ) *
+                                                ) ) * $ (
+                                                $ modules : ident $ (
+                                                (
+                                                $ ( $ modules_args : ident ) *
+                                                ) ) * ) * } $ ( $ rest : tt )
+                                                * ) => {
+                                                $ crate ::
+                                                __impl_outer_validate_unsigned
+                                                ! (
+                                                $ runtime ; { $ ( $ parsed ) *
+                                                } ; $ name : $ module :: $ (
+                                                < $ module_instance > :: ) ? {
+                                                $ (
+                                                $ modules $ (
+                                                ( $ ( $ modules_args ) * ) ) *
+                                                ) * } $ ( $ rest ) * ) ; } ; (
+                                                $ runtime : ident ; {
+                                                $ ( $ parsed : tt ) * } ; $
+                                                name : ident : $ module :
+                                                ident :: $ (
+                                                < $ module_instance : ident >
+                                                :: ) ? {  } $ ( $ rest : tt )
+                                                * ) => {
+                                                $ crate ::
+                                                __impl_outer_validate_unsigned
+                                                ! (
+                                                $ runtime ; { $ ( $ parsed ) *
+                                                } ; $ ( $ rest ) * ) ; } ; (
+                                                $ runtime : ident ; {
+                                                $ ( $ parsed_modules : ident )
+                                                * } ; ) => {
+                                                $ crate ::
+                                                impl_outer_validate_unsigned !
+                                                (
+                                                impl ValidateUnsigned for $
+                                                runtime {
+                                                $ ( $ parsed_modules ) * } ) ;
+                                                } ;);
+}
+#[macro_use]
+pub mod inherent {
+    #[doc(hidden)]
+    pub use crate::rstd::vec::Vec;
+    #[doc(hidden)]
+    pub use crate::runtime_primitives::traits::{Block as BlockT, Extrinsic};
+    #[doc(hidden)]
+    pub use inherents::{InherentData, ProvideInherent, CheckInherentsResult,
+                        IsFatalError};
+    /// Implement the outer inherent.
+    /// All given modules need to implement `ProvideInherent`.
+    ///
+    /// # Example
+    ///
+    /// ```nocompile
+    /// impl_outer_inherent! {
+    ///     impl Inherents where Block = Block, UncheckedExtrinsic = UncheckedExtrinsic {
+    ///         timestamp: Timestamp,
+    ///         consensus: Consensus,
+    ///         /// Aura module using the `Timestamp` call.
+    ///         aura: Timestamp,
+    ///     }
+    /// }
+    /// ```
+    #[macro_export]
+    macro_rules! impl_outer_inherent((
+                                     impl Inherents where Block = $ block :
+                                     ident , UncheckedExtrinsic = $
+                                     uncheckedextrinsic : ident {
+                                     $ ( $ module : ident : $ call : ident , )
+                                     * } ) => {
+                                     trait InherentDataExt {
+                                     fn create_extrinsics ( & self ) -> $
+                                     crate :: inherent :: Vec << $ block as $
+                                     crate :: inherent :: BlockT > ::
+                                     Extrinsic > ; fn check_extrinsics (
+                                     & self , block : & $ block ) -> $ crate
+                                     :: inherent :: CheckInherentsResult ; }
+                                     impl InherentDataExt for $ crate ::
+                                     inherent :: InherentData {
+                                     fn create_extrinsics ( & self ) -> $
+                                     crate :: inherent :: Vec << $ block as $
+                                     crate :: inherent :: BlockT > ::
+                                     Extrinsic > {
+                                     use $ crate :: inherent ::
+                                     ProvideInherent ; let mut inherents = Vec
+                                     :: new (  ) ; $ (
+                                     if let Some ( inherent ) = $ module ::
+                                     create_inherent ( self ) {
+                                     inherents . push (
+                                     $ uncheckedextrinsic :: new_unsigned (
+                                     Call :: $ call ( inherent ) ) ) ; } ) *
+                                     inherents } fn check_extrinsics (
+                                     & self , block : & $ block ) -> $ crate
+                                     :: inherent :: CheckInherentsResult {
+                                     use $ crate :: inherent :: {
+                                     ProvideInherent , IsFatalError } ; let
+                                     mut result = $ crate :: inherent ::
+                                     CheckInherentsResult :: new (  ) ; for xt
+                                     in block . extrinsics (  ) {
+                                     if $ crate :: inherent :: Extrinsic ::
+                                     is_signed ( xt ) . unwrap_or ( false ) {
+                                     break ; } $ (
+                                     match xt . function {
+                                     Call :: $ call ( ref call ) => {
+                                     if let Err ( e ) = $ module ::
+                                     check_inherent ( call , self ) {
+                                     result . put_error (
+                                     $ module :: INHERENT_IDENTIFIER , & e ) .
+                                     expect (
+                                     "There is only one fatal error; qed" ) ;
+                                     if e . is_fatal_error (  ) {
+                                     return result ; } } } _ => {  } , } ) * }
+                                     result } } } ;);
+}
+#[macro_use]
+pub mod unsigned {
+    #[doc(hidden)]
+    pub use crate::runtime_primitives::traits::ValidateUnsigned;
+    #[doc(hidden)]
+    pub use crate::runtime_primitives::transaction_validity::TransactionValidity;
+    #[doc(hidden)]
+    pub use crate::runtime_primitives::ApplyError;
+    /// Implement `ValidateUnsigned` for `Runtime`.
+    /// All given modules need to implement `ValidateUnsigned`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # mod timestamp {
+    /// # 	pub struct Module;
+    /// #
+    /// # 	impl srml_support::unsigned::ValidateUnsigned for Module {
+    /// # 		type Call = Call;
+    /// #
+    /// # 		fn validate_unsigned(call: &Self::Call) -> srml_support::unsigned::TransactionValidity {
+    /// # 			unimplemented!();
+    /// # 		}
+    /// # 	}
+    /// #
+    /// # 	pub enum Call {
+    /// # 	}
+    /// # }
+    /// #
+    /// # pub type Timestamp = timestamp::Module;
+    /// #
+    /// #
+    /// # pub enum Call {
+    /// # 	Timestamp(timestamp::Call),
+    /// # }
+    /// # #[allow(unused)]
+    /// pub struct Runtime;
+    ///
+    /// srml_support::impl_outer_validate_unsigned! {
+    /// 	impl ValidateUnsigned for Runtime {
+    /// 		Timestamp
+    /// 	}
+    /// }
+    /// ```
+    #[macro_export]
+    macro_rules! impl_outer_validate_unsigned((
+                                              impl ValidateUnsigned for $
+                                              runtime : ident {
+                                              $ ( $ module : ident ) * } ) =>
+                                              {
+                                              impl $ crate :: unsigned ::
+                                              ValidateUnsigned for $ runtime {
+                                              type Call = Call ; fn
+                                              validate_unsigned (
+                                              call : & Self :: Call ) -> $
+                                              crate :: unsigned ::
+                                              TransactionValidity {
+                                              # [
+                                              allow ( unreachable_patterns ) ]
+                                              match call {
+                                              $ (
+                                              Call :: $ module ( inner_call )
+                                              => $ module :: validate_unsigned
+                                              ( inner_call ) , ) * _ => $
+                                              crate :: unsigned ::
+                                              TransactionValidity :: Invalid (
+                                              $ crate :: unsigned ::
+                                              ApplyError :: BadSignature as i8
+                                              ) , } } } } ;);
+}
+mod double_map {
+    //! An implementation of double map backed by storage.
+    use crate::rstd::prelude::*;
+    use crate::codec::{Codec, Encode};
+    use crate::storage::unhashed;
+    use sr_std::borrow::Borrow;
+    /// An implementation of a map with a two keys.
+    ///
+    /// It provides an important ability to efficiently remove all entries
+    /// that have a common first key.
+    ///
+    /// # Mapping of keys to a storage path
+    ///
+    /// The storage key (i.e. the key under which the `Value` will be stored) is created from two parts.
+    /// The first part is a hash of a concatenation of the `PREFIX` and `Key1`. And the second part
+    /// is a hash of a `Key2`.
+    ///
+    /// Hasher are implemented in derive_key* methods.
+    pub trait StorageDoubleMapWithHasher {
+        type
+        Key1: Codec;
+        type
+        Key2: Codec;
+        type
+        Value: Codec +
+        Default;
+        const
+        PREFIX:
+        &'static [u8];
+        /// Insert an entry into this map.
+        fn insert<Q, R>(k1: &Q, k2: &R, val: Self::Value) where
+         Self::Key1: Borrow<Q>, Self::Key2: Borrow<R>, Q: Codec, R: Codec {
+            unhashed::put(&Self::full_key(k1, k2)[..], &val);
+        }
+        /// Remove an entry from this map.
+        fn remove<Q, R>(k1: &Q, k2: &R) where Self::Key1: Borrow<Q>,
+         Self::Key2: Borrow<R>, Q: Codec, R: Codec {
+            unhashed::kill(&Self::full_key(k1, k2)[..]);
+        }
+        /// Get an entry from this map.
+        ///
+        /// If there is entry stored under the given keys, returns `None`.
+        fn get<Q, R>(k1: &Q, k2: &R) -> Option<Self::Value> where
+         Self::Key1: Borrow<Q>, Self::Key2: Borrow<R>, Q: Codec, R: Codec {
+            unhashed::get(&Self::full_key(k1, k2)[..])
+        }
+        /// Returns `true` if value under the specified keys exists.
+        fn exists<Q, R>(k1: &Q, k2: &R) -> bool where Self::Key1: Borrow<Q>,
+         Self::Key2: Borrow<R>, Q: Codec, R: Codec {
+            unhashed::exists(&Self::full_key(k1, k2)[..])
+        }
+        /// Removes all entries that shares the `k1` as the first key.
+        fn remove_prefix<Q>(k1: &Q) where Self::Key1: Borrow<Q>, Q: Codec {
+            unhashed::kill_prefix(&Self::derive_key1(Self::encode_key1(k1)))
+        }
+        /// Encode key1 into Vec<u8> and prepend a prefix
+        fn encode_key1<Q>(key: &Q) -> Vec<u8> where Self::Key1: Borrow<Q>,
+         Q: Codec {
+            let mut raw_prefix = Vec::new();
+            raw_prefix.extend(Self::PREFIX);
+            key.encode_to(&mut raw_prefix);
+            raw_prefix
+        }
+        /// Encode key2 into Vec<u8>
+        fn encode_key2<R>(key: &R) -> Vec<u8> where Self::Key2: Borrow<R>,
+         R: Codec {
+            Encode::encode(&key)
+        }
+        /// Derive the first part of the key
+        fn derive_key1(key1_data: Vec<u8>)
+        -> Vec<u8>;
+        /// Derive the remaining part of the key
+        fn derive_key2(key2_data: Vec<u8>)
+        -> Vec<u8>;
+        /// Returns a compound key that consist of the two parts: (prefix, `k1`) and `k2`.
+        /// The first part is hashed and then concatenated with a hash of `k2`.
+        fn full_key<Q, R>(k1: &Q, k2: &R) -> Vec<u8> where
+         Self::Key1: Borrow<Q>, Self::Key2: Borrow<R>, Q: Codec, R: Codec {
+            let key1_data = Self::encode_key1(k1);
+            let key2_data = Self::encode_key2(k2);
+            let mut key = Self::derive_key1(key1_data);
+            key.extend(Self::derive_key2(key2_data));
+            key
+        }
+    }
+}
+pub mod traits {
+    //! Traits for SRML
+    use crate::rstd::result;
+    use crate::codec::{Codec, Encode, Decode};
+    use crate::runtime_primitives::traits::{MaybeSerializeDebug,
+                                            SimpleArithmetic};
+    /// New trait for querying a single fixed value from a type.
+    pub trait Get<T> {
+        /// Return a constant value.
+        fn get()
+        -> T;
+    }
+    /// Macro for easily creating a new implementation of the `Get` trait. Use similarly to
+    /// how you would declare a `const`:
+    ///
+    /// ```no_compile
+    /// parameter_types! {
+    ///   pub const Argument: u64 = 42;
+    /// }
+    /// trait Config {
+    ///   type Parameter: Get<u64>;
+    /// }
+    /// struct Runtime;
+    /// impl Config for Runtime {
+    ///   type Parameter = Argument;
+    /// }
+    /// ```
+    #[macro_export]
+    macro_rules! parameter_types((
+                                 pub const $ name : ident : $ type : ty = $
+                                 value : expr ; $ ( $ rest : tt ) * ) => (
+                                 pub struct $ name ; parameter_types ! {
+                                 IMPL $ name , $ type , $ value }
+                                 parameter_types ! { $ ( $ rest ) * } ) ; (
+                                 const $ name : ident : $ type : ty = $ value
+                                 : expr ; $ ( $ rest : tt ) * ) => (
+                                 struct $ name ; parameter_types ! {
+                                 IMPL $ name , $ type , $ value }
+                                 parameter_types ! { $ ( $ rest ) * } ) ; (  )
+                                 => (  ) ; (
+                                 IMPL $ name : ident , $ type : ty , $ value :
+                                 expr ) => {
+                                 impl $ crate :: traits :: Get < $ type > for
+                                 $ name { fn get (  ) -> $ type { $ value } }
+                                 });
+    /// The account with the given id was killed.
+    pub trait OnFreeBalanceZero<AccountId> {
+        /// The account was the given id was killed.
+        fn on_free_balance_zero(who: &AccountId);
+    }
+    impl <AccountId> OnFreeBalanceZero<AccountId> for () {
+        fn on_free_balance_zero(_who: &AccountId) { }
+    }
+    impl <AccountId, X: OnFreeBalanceZero<AccountId>,
+          Y: OnFreeBalanceZero<AccountId>> OnFreeBalanceZero<AccountId> for
+     (X, Y) {
+        fn on_free_balance_zero(who: &AccountId) {
+            X::on_free_balance_zero(who);
+            Y::on_free_balance_zero(who);
+        }
+    }
+    /// Trait for a hook to get called when some balance has been minted, causing dilution.
+    pub trait OnDilution<Balance> {
+        /// Some `portion` of the total balance just "grew" by `minted`. `portion` is the pre-growth
+        /// amount (it doesn't take account of the recent growth).
+        fn on_dilution(minted: Balance, portion: Balance);
+    }
+    impl <Balance> OnDilution<Balance> for () {
+        fn on_dilution(_minted: Balance, _portion: Balance) { }
+    }
+    /// Outcome of a balance update.
+    pub enum UpdateBalanceOutcome {
+
+        /// Account balance was simply updated.
+        Updated,
+
+        /// The update led to killing the account.
+        AccountKilled,
+    }
+    /// Simple trait designed for hooking into a transaction payment.
+    ///
+    /// It operates over a single generic `AccountId` type.
+    pub trait MakePayment<AccountId> {
+        /// Make transaction payment from `who` for an extrinsic of encoded length
+        /// `encoded_len` bytes. Return `Ok` iff the payment was successful.
+        fn make_payment(who: &AccountId, encoded_len: usize)
+        -> Result<(), &'static str>;
+    }
+    impl <T> MakePayment<T> for () {
+        fn make_payment(_: &T, _: usize) -> Result<(), &'static str> {
+            Ok(())
+        }
+    }
+    /// Handler for when some currency "account" decreased in balance for
+    /// some reason.
+    ///
+    /// The only reason at present for an increase would be for validator rewards, but
+    /// there may be other reasons in the future or for other chains.
+    ///
+    /// Reasons for decreases include:
+    ///
+    /// - Someone got slashed.
+    /// - Someone paid for a transaction to be included.
+    pub trait OnUnbalanced<Imbalance> {
+        /// Handler for some imbalance. Infallible.
+        fn on_unbalanced(amount: Imbalance);
+    }
+    impl <Imbalance: Drop> OnUnbalanced<Imbalance> for () {
+        fn on_unbalanced(amount: Imbalance) { drop(amount); }
+    }
+    /// Simple boolean for whether an account needs to be kept in existence.
+    #[structural_match]
+    #[rustc_copy_clone_marker]
+    pub enum ExistenceRequirement {
+
+        /// Operation must not result in the account going out of existence.
+        KeepAlive,
+
+        /// Operation may result in account going out of existence.
+        AllowDeath,
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    impl ::std::marker::Copy for ExistenceRequirement { }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    impl ::std::clone::Clone for ExistenceRequirement {
+        #[inline]
+        fn clone(&self) -> ExistenceRequirement { { *self } }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    impl ::std::cmp::Eq for ExistenceRequirement {
+        #[inline]
+        #[doc(hidden)]
+        fn assert_receiver_is_total_eq(&self) -> () { { } }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    impl ::std::cmp::PartialEq for ExistenceRequirement {
+        #[inline]
+        fn eq(&self, other: &ExistenceRequirement) -> bool {
+            {
+                let __self_vi =
+                    unsafe { ::std::intrinsics::discriminant_value(&*self) }
+                        as isize;
+                let __arg_1_vi =
+                    unsafe { ::std::intrinsics::discriminant_value(&*other) }
+                        as isize;
+                if true && __self_vi == __arg_1_vi {
+                    match (&*self, &*other) { _ => true, }
+                } else { false }
+            }
+        }
+    }
+    /// A trait for a not-quite Linear Type that tracks an imbalance.
+    ///
+    /// Functions that alter account balances return an object of this trait to
+    /// express how much account balances have been altered in aggregate. If
+    /// dropped, the currency system will take some default steps to deal with
+    /// the imbalance (`balances` module simply reduces or increases its
+    /// total issuance). Your module should generally handle it in some way,
+    /// good practice is to do so in a configurable manner using an
+    /// `OnUnbalanced` type for each situation in which your module needs to
+    /// handle an imbalance.
+    ///
+    /// Imbalances can either be Positive (funds were added somewhere without
+    /// being subtracted elsewhere - e.g. a reward) or Negative (funds deducted
+    /// somewhere without an equal and opposite addition - e.g. a slash or
+    /// system fee payment).
+    ///
+    /// Since they are unsigned, the actual type is always Positive or Negative.
+    /// The trait makes no distinction except to define the `Opposite` type.
+    ///
+    /// New instances of zero value can be created (`zero`) and destroyed
+    /// (`drop_zero`).
+    ///
+    /// Existing instances can be `split` and merged either consuming `self` with
+    /// `merge` or mutating `self` with `subsume`. If the target is an `Option`,
+    /// then `maybe_merge` and `maybe_subsume` might work better. Instances can
+    /// also be `offset` with an `Opposite` that is less than or equal to in value.
+    ///
+    /// You can always retrieve the raw balance value using `peek`.
+    #[must_use]
+    pub trait Imbalance<Balance>: Sized {
+        /// The oppositely imbalanced type. They come in pairs.
+        type
+        Opposite: Imbalance<Balance>;
+        /// The zero imbalance. Can be destroyed with `drop_zero`.
+        fn zero()
+        -> Self;
+        /// Drop an instance cleanly. Only works if its `value()` is zero.
+        fn drop_zero(self)
+        -> Result<(), Self>;
+        /// Consume `self` and return two independent instances; the first
+        /// is guaranteed to be at most `amount` and the second will be the remainder.
+        fn split(self, amount: Balance)
+        -> (Self, Self);
+        /// Consume `self` and an `other` to return a new instance that combines
+        /// both.
+        fn merge(self, other: Self)
+        -> Self;
+        /// Consume `self` and maybe an `other` to return a new instance that combines
+        /// both.
+        fn maybe_merge(self, other: Option<Self>) -> Self {
+            if let Some(o) = other { self.merge(o) } else { self }
+        }
+        /// Consume an `other` to mutate `self` into a new instance that combines
+        /// both.
+        fn subsume(&mut self, other: Self);
+        /// Maybe consume an `other` to mutate `self` into a new instance that combines
+        /// both.
+        fn maybe_subsume(&mut self, other: Option<Self>) {
+            if let Some(o) = other { self.subsume(o) }
+        }
+        /// Consume self and along with an opposite counterpart to return
+        /// a combined result.
+        ///
+        /// Returns `Ok` along with a new instance of `Self` if this instance has a
+        /// greater value than the `other`. Otherwise returns `Err` with an instance of
+        /// the `Opposite`. In both cases the value represents the combination of `self`
+        /// and `other`.
+        fn offset(self, other: Self::Opposite)
+        -> Result<Self, Self::Opposite>;
+        /// The raw value of self.
+        fn peek(&self)
+        -> Balance;
+    }
+    /// Either a positive or a negative imbalance.
+    pub enum SignedImbalance<B, P: Imbalance<B>> {
+
+        /// A positive imbalance (funds have been created but none destroyed).
+        Positive(P),
+
+        /// A negative imbalance (funds have been destroyed but none created).
+        Negative(P::Opposite),
+    }
+    impl <P: Imbalance<B, Opposite = N>, N: Imbalance<B, Opposite = P>,
+          B: SimpleArithmetic + Codec + Copy + MaybeSerializeDebug + Default>
+     SignedImbalance<B, P> {
+        pub fn zero() -> Self { SignedImbalance::Positive(P::zero()) }
+        pub fn drop_zero(self) -> Result<(), Self> {
+            match self {
+                SignedImbalance::Positive(x) =>
+                x.drop_zero().map_err(SignedImbalance::Positive),
+                SignedImbalance::Negative(x) =>
+                x.drop_zero().map_err(SignedImbalance::Negative),
+            }
+        }
+        /// Consume `self` and an `other` to return a new instance that combines
+        /// both.
+        pub fn merge(self, other: Self) -> Self {
+            match (self, other) {
+                (SignedImbalance::Positive(one),
+                 SignedImbalance::Positive(other)) =>
+                SignedImbalance::Positive(one.merge(other)),
+                (SignedImbalance::Negative(one),
+                 SignedImbalance::Negative(other)) =>
+                SignedImbalance::Negative(one.merge(other)),
+                (SignedImbalance::Positive(one),
+                 SignedImbalance::Negative(other)) =>
+                if one.peek() > other.peek() {
+                    SignedImbalance::Positive(one.offset(other).ok().unwrap_or_else(P::zero))
+                } else {
+                    SignedImbalance::Negative(other.offset(one).ok().unwrap_or_else(N::zero))
+                },
+                (one, other) => other.merge(one),
+            }
+        }
+    }
+    /// Abstraction over a fungible assets system.
+    pub trait Currency<AccountId> {
+        /// The balance of an account.
+        type
+        Balance: SimpleArithmetic +
+        Codec +
+        Copy +
+        MaybeSerializeDebug +
+        Default;
+        /// The opaque token type for an imbalance. This is returned by unbalanced operations
+        /// and must be dealt with. It may be dropped but cannot be cloned.
+        type
+        PositiveImbalance: Imbalance<Self::Balance,
+        Opposite
+        =
+        Self::NegativeImbalance>;
+        /// The opaque token type for an imbalance. This is returned by unbalanced operations
+        /// and must be dealt with. It may be dropped but cannot be cloned.
+        type
+        NegativeImbalance: Imbalance<Self::Balance,
+        Opposite
+        =
+        Self::PositiveImbalance>;
+        /// The combined balance of `who`.
+        fn total_balance(who: &AccountId)
+        -> Self::Balance;
+        /// Same result as `slash(who, value)` (but without the side-effects) assuming there are no
+        /// balance changes in the meantime and only the reserved balance is not taken into account.
+        fn can_slash(who: &AccountId, value: Self::Balance)
+        -> bool;
+        /// The total amount of issuance in the system.
+        fn total_issuance()
+        -> Self::Balance;
+        /// The minimum balance any single account may have. This is equivalent to the `Balances` module's
+        /// `ExistentialDeposit`.
+        fn minimum_balance()
+        -> Self::Balance;
+        /// The 'free' balance of a given account.
+        ///
+        /// This is the only balance that matters in terms of most operations on tokens. It alone
+        /// is used to determine the balance when in the contract execution environment. When this
+        /// balance falls below the value of `ExistentialDeposit`, then the 'current account' is
+        /// deleted: specifically `FreeBalance`. Further, the `OnFreeBalanceZero` callback
+        /// is invoked, giving a chance to external modules to clean up data associated with
+        /// the deleted account.
+        ///
+        /// `system::AccountNonce` is also deleted if `ReservedBalance` is also zero (it also gets
+        /// collapsed to zero if it ever becomes less than `ExistentialDeposit`.
+        fn free_balance(who: &AccountId)
+        -> Self::Balance;
+        /// Returns `Ok` iff the account is able to make a withdrawal of the given amount
+        /// for the given reason. Basically, it's just a dry-run of `withdraw`.
+        ///
+        /// `Err(...)` with the reason why not otherwise.
+        fn ensure_can_withdraw(who: &AccountId, _amount: Self::Balance,
+                               reason: WithdrawReason,
+                               new_balance: Self::Balance)
+        -> result::Result<(), &'static str>;
+        /// Transfer some liquid free balance to another staker.
+        ///
+        /// This is a very high-level function. It will ensure all appropriate fees are paid
+        /// and no imbalance in the system remains.
+        fn transfer(source: &AccountId, dest: &AccountId,
+                    value: Self::Balance)
+        -> result::Result<(), &'static str>;
+        /// Deducts up to `value` from the combined balance of `who`, preferring to deduct from the
+        /// free balance. This function cannot fail.
+        ///
+        /// The resulting imbalance is the first item of the tuple returned.
+        ///
+        /// As much funds up to `value` will be deducted as possible. If this is less than `value`,
+        /// then a non-zero second item will be returned.
+        fn slash(who: &AccountId, value: Self::Balance)
+        -> (Self::NegativeImbalance, Self::Balance);
+        /// Mints `value` to the free balance of `who`.
+        ///
+        /// If `who` doesn't exist, nothing is done and an Err returned.
+        fn deposit_into_existing(who: &AccountId, value: Self::Balance)
+        -> result::Result<Self::PositiveImbalance, &'static str>;
+        /// Removes some free balance from `who` account for `reason` if possible. If `liveness` is `KeepAlive`,
+        /// then no less than `ExistentialDeposit` must be left remaining.
+        ///
+        /// This checks any locks, vesting, and liquidity requirements. If the removal is not possible, then it
+        /// returns `Err`.
+        fn withdraw(who: &AccountId, value: Self::Balance,
+                    reason: WithdrawReason, liveness: ExistenceRequirement)
+        -> result::Result<Self::NegativeImbalance, &'static str>;
+        /// Adds up to `value` to the free balance of `who`. If `who` doesn't exist, it is created.
+        ///
+        /// Infallible.
+        fn deposit_creating(who: &AccountId, value: Self::Balance)
+        -> Self::PositiveImbalance;
+        /// Ensure an account's free balance equals some value; this will create the account
+        /// if needed.
+        ///
+        /// Returns a signed imbalance and status to indicate if the account was successfully updated or update
+        /// has led to killing of the account.
+        fn make_free_balance_be(who: &AccountId, balance: Self::Balance)
+        ->
+            (SignedImbalance<Self::Balance, Self::PositiveImbalance>,
+             UpdateBalanceOutcome);
+    }
+    /// A currency where funds can be reserved from the user.
+    pub trait ReservableCurrency<AccountId>: Currency<AccountId> {
+        /// Same result as `reserve(who, value)` (but without the side-effects) assuming there
+        /// are no balance changes in the meantime.
+        fn can_reserve(who: &AccountId, value: Self::Balance)
+        -> bool;
+        /// Deducts up to `value` from reserved balance of `who`. This function cannot fail.
+        ///
+        /// As much funds up to `value` will be deducted as possible. If the reserve balance of `who`
+        /// is less than `value`, then a non-zero second item will be returned.
+        fn slash_reserved(who: &AccountId, value: Self::Balance)
+        -> (Self::NegativeImbalance, Self::Balance);
+        /// The amount of the balance of a given account that is externally reserved; this can still get
+        /// slashed, but gets slashed last of all.
+        ///
+        /// This balance is a 'reserve' balance that other subsystems use in order to set aside tokens
+        /// that are still 'owned' by the account holder, but which are suspendable.
+        ///
+        /// When this balance falls below the value of `ExistentialDeposit`, then this 'reserve account'
+        /// is deleted: specifically, `ReservedBalance`.
+        ///
+        /// `system::AccountNonce` is also deleted if `FreeBalance` is also zero (it also gets
+        /// collapsed to zero if it ever becomes less than `ExistentialDeposit`.
+        fn reserved_balance(who: &AccountId)
+        -> Self::Balance;
+        /// Moves `value` from balance to reserved balance.
+        ///
+        /// If the free balance is lower than `value`, then no funds will be moved and an `Err` will
+        /// be returned to notify of this. This is different behavior than `unreserve`.
+        fn reserve(who: &AccountId, value: Self::Balance)
+        -> result::Result<(), &'static str>;
+        /// Moves up to `value` from reserved balance to free balance. This function cannot fail.
+        ///
+        /// As much funds up to `value` will be moved as possible. If the reserve balance of `who`
+        /// is less than `value`, then the remaining amount will be returned.
+        ///
+        /// # NOTES
+        ///
+        /// - This is different from `reserve`.
+        /// - If the remaining reserved balance is less than `ExistentialDeposit`, it will
+        /// invoke `on_reserved_too_low` and could reap the account.
+        fn unreserve(who: &AccountId, value: Self::Balance)
+        -> Self::Balance;
+        /// Moves up to `value` from reserved balance of account `slashed` to free balance of account
+        /// `beneficiary`. `beneficiary` must exist for this to succeed. If it does not, `Err` will be
+        /// returned.
+        ///
+        /// As much funds up to `value` will be deducted as possible. If this is less than `value`,
+        /// then `Ok(non_zero)` will be returned.
+        fn repatriate_reserved(slashed: &AccountId, beneficiary: &AccountId,
+                               value: Self::Balance)
+        -> result::Result<Self::Balance, &'static str>;
+    }
+    /// An identifier for a lock. Used for disambiguating different locks so that
+    /// they can be individually replaced or removed.
+    pub type LockIdentifier = [u8; 8];
+    /// A currency whose accounts can have liquidity restrictions.
+    pub trait LockableCurrency<AccountId>: Currency<AccountId> {
+        /// The quantity used to denote time; usually just a `BlockNumber`.
+        type
+        Moment;
+        /// Create a new balance lock on account `who`.
+        ///
+        /// If the new lock is valid (i.e. not already expired), it will push the struct to
+        /// the `Locks` vec in storage. Note that you can lock more funds than a user has.
+        ///
+        /// If the lock `id` already exists, this will update it.
+        fn set_lock(id: LockIdentifier, who: &AccountId,
+                    amount: Self::Balance, until: Self::Moment,
+                    reasons: WithdrawReasons);
+        /// Changes a balance lock (selected by `id`) so that it becomes less liquid in all
+        /// parameters or creates a new one if it does not exist.
+        ///
+        /// Calling `extend_lock` on an existing lock `id` differs from `set_lock` in that it
+        /// applies the most severe constraints of the two, while `set_lock` replaces the lock
+        /// with the new parameters. As in, `extend_lock` will set:
+        /// - maximum `amount`
+        /// - farthest duration (`until`)
+        /// - bitwise mask of all `reasons`
+        fn extend_lock(id: LockIdentifier, who: &AccountId,
+                       amount: Self::Balance, until: Self::Moment,
+                       reasons: WithdrawReasons);
+        /// Remove an existing lock.
+        fn remove_lock(id: LockIdentifier, who: &AccountId);
+    }
+    #[repr(i8)]
+    #[allow(dead_code)]
+    #[doc = r" Reason for moving funds out of an account."]
+    #[structural_match]
+    #[rustc_copy_clone_marker]
+    pub enum WithdrawReason {
+
+        #[doc = r" In order to pay for (system) transaction costs."]
+        TransactionPayment = 0b00000001,
+
+        #[doc = r" In order to transfer ownership."]
+        Transfer = 0b00000010,
+
+        #[doc =
+              r" In order to reserve some funds for a later return or repatriation"]
+        Reserve = 0b00000100,
+
+        #[doc = r" In order to pay some other (higher-level) fees."]
+        Fee = 0b00001000,
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::marker::Copy for WithdrawReason { }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::clone::Clone for WithdrawReason {
+        #[inline]
+        fn clone(&self) -> WithdrawReason { { *self } }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::cmp::Eq for WithdrawReason {
+        #[inline]
+        #[doc(hidden)]
+        fn assert_receiver_is_total_eq(&self) -> () { { } }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::cmp::PartialEq for WithdrawReason {
+        #[inline]
+        fn eq(&self, other: &WithdrawReason) -> bool {
+            {
+                let __self_vi =
+                    unsafe { ::std::intrinsics::discriminant_value(&*self) }
+                        as i8;
+                let __arg_1_vi =
+                    unsafe { ::std::intrinsics::discriminant_value(&*other) }
+                        as i8;
+                if true && __self_vi == __arg_1_vi {
+                    match (&*self, &*other) { _ => true, }
+                } else { false }
+            }
+        }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::cmp::Ord for WithdrawReason {
+        #[inline]
+        fn cmp(&self, other: &WithdrawReason) -> ::std::cmp::Ordering {
+            {
+                let __self_vi =
+                    unsafe { ::std::intrinsics::discriminant_value(&*self) }
+                        as i8;
+                let __arg_1_vi =
+                    unsafe { ::std::intrinsics::discriminant_value(&*other) }
+                        as i8;
+                if true && __self_vi == __arg_1_vi {
+                    match (&*self, &*other) {
+                        _ => ::std::cmp::Ordering::Equal,
+                    }
+                } else { __self_vi.cmp(&__arg_1_vi) }
+            }
+        }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::cmp::PartialOrd for WithdrawReason {
+        #[inline]
+        fn partial_cmp(&self, other: &WithdrawReason)
+         -> ::std::option::Option<::std::cmp::Ordering> {
+            {
+                let __self_vi =
+                    unsafe { ::std::intrinsics::discriminant_value(&*self) }
+                        as i8;
+                let __arg_1_vi =
+                    unsafe { ::std::intrinsics::discriminant_value(&*other) }
+                        as i8;
+                if true && __self_vi == __arg_1_vi {
+                    match (&*self, &*other) {
+                        _ =>
+                        ::std::option::Option::Some(::std::cmp::Ordering::Equal),
+                    }
+                } else { __self_vi.partial_cmp(&__arg_1_vi) }
+            }
+        }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::fmt::Debug for WithdrawReason {
+        fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+            match (&*self,) {
+                (&WithdrawReason::TransactionPayment,) => {
+                    let mut debug_trait_builder =
+                        f.debug_tuple("TransactionPayment");
+                    debug_trait_builder.finish()
+                }
+                (&WithdrawReason::Transfer,) => {
+                    let mut debug_trait_builder = f.debug_tuple("Transfer");
+                    debug_trait_builder.finish()
+                }
+                (&WithdrawReason::Reserve,) => {
+                    let mut debug_trait_builder = f.debug_tuple("Reserve");
+                    debug_trait_builder.finish()
+                }
+                (&WithdrawReason::Fee,) => {
+                    let mut debug_trait_builder = f.debug_tuple("Fee");
+                    debug_trait_builder.finish()
+                }
+            }
+        }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::hash::Hash for WithdrawReason {
+        fn hash<__H: ::std::hash::Hasher>(&self, state: &mut __H) -> () {
+            match (&*self,) {
+                _ => {
+                    ::std::hash::Hash::hash(&unsafe {
+                                                 ::std::intrinsics::discriminant_value(self)
+                                             }, state)
+                }
+            }
+        }
+    }
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications)]
+    const _IMPL_ENCODE_FOR_WithdrawReason: () =
+        {
+            #[allow(unknown_lints)]
+            #[allow(rust_2018_idioms)]
+            extern crate codec as _parity_codec;
+            impl _parity_codec::Encode for WithdrawReason {
+                fn encode_to<EncOut: _parity_codec::Output>(&self,
+                                                            dest:
+                                                                &mut EncOut) {
+                    match *self {
+                        WithdrawReason::TransactionPayment => {
+                            dest.push_byte(0b00000001 as u8);
+                        }
+                        WithdrawReason::Transfer => {
+                            dest.push_byte(0b00000010 as u8);
+                        }
+                        WithdrawReason::Reserve => {
+                            dest.push_byte(0b00000100 as u8);
+                        }
+                        WithdrawReason::Fee => {
+                            dest.push_byte(0b00001000 as u8);
+                        }
+                        _ => (),
+                    }
+                }
+            }
+        };
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications)]
+    const _IMPL_DECODE_FOR_WithdrawReason: () =
+        {
+            #[allow(unknown_lints)]
+            #[allow(rust_2018_idioms)]
+            extern crate codec as _parity_codec;
+            impl _parity_codec::Decode for WithdrawReason {
+                fn decode<DecIn: _parity_codec::Input>(input: &mut DecIn)
+                 -> Option<Self> {
+                    match input.read_byte()? {
+                        x if x == 0b00000001 as u8 => {
+                            Some(WithdrawReason::TransactionPayment)
+                        }
+                        x if x == 0b00000010 as u8 => {
+                            Some(WithdrawReason::Transfer)
+                        }
+                        x if x == 0b00000100 as u8 => {
+                            Some(WithdrawReason::Reserve)
+                        }
+                        x if x == 0b00001000 as u8 => {
+                            Some(WithdrawReason::Fee)
+                        }
+                        _ => None,
+                    }
+                }
+            }
+        };
+    #[allow(dead_code)]
+    #[doc = r" Reasons for moving funds out of an account."]
+    #[structural_match]
+    #[rustc_copy_clone_marker]
+    pub struct WithdrawReasons {
+        mask: i8,
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::marker::Copy for WithdrawReasons { }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::clone::Clone for WithdrawReasons {
+        #[inline]
+        fn clone(&self) -> WithdrawReasons {
+            { let _: ::std::clone::AssertParamIsClone<i8>; *self }
+        }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::cmp::Eq for WithdrawReasons {
+        #[inline]
+        #[doc(hidden)]
+        fn assert_receiver_is_total_eq(&self) -> () {
+            { let _: ::std::cmp::AssertParamIsEq<i8>; }
+        }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::cmp::PartialEq for WithdrawReasons {
+        #[inline]
+        fn eq(&self, other: &WithdrawReasons) -> bool {
+            match *other {
+                WithdrawReasons { mask: ref __self_1_0 } =>
+                match *self {
+                    WithdrawReasons { mask: ref __self_0_0 } =>
+                    (*__self_0_0) == (*__self_1_0),
+                },
+            }
+        }
+        #[inline]
+        fn ne(&self, other: &WithdrawReasons) -> bool {
+            match *other {
+                WithdrawReasons { mask: ref __self_1_0 } =>
+                match *self {
+                    WithdrawReasons { mask: ref __self_0_0 } =>
+                    (*__self_0_0) != (*__self_1_0),
+                },
+            }
+        }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::cmp::Ord for WithdrawReasons {
+        #[inline]
+        fn cmp(&self, other: &WithdrawReasons) -> ::std::cmp::Ordering {
+            match *other {
+                WithdrawReasons { mask: ref __self_1_0 } =>
+                match *self {
+                    WithdrawReasons { mask: ref __self_0_0 } =>
+                    match ::std::cmp::Ord::cmp(&(*__self_0_0), &(*__self_1_0))
+                        {
+                        ::std::cmp::Ordering::Equal =>
+                        ::std::cmp::Ordering::Equal,
+                        cmp => cmp,
+                    },
+                },
+            }
+        }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::cmp::PartialOrd for WithdrawReasons {
+        #[inline]
+        fn partial_cmp(&self, other: &WithdrawReasons)
+         -> ::std::option::Option<::std::cmp::Ordering> {
+            match *other {
+                WithdrawReasons { mask: ref __self_1_0 } =>
+                match *self {
+                    WithdrawReasons { mask: ref __self_0_0 } =>
+                    match ::std::cmp::PartialOrd::partial_cmp(&(*__self_0_0),
+                                                              &(*__self_1_0))
+                        {
+                        ::std::option::Option::Some(::std::cmp::Ordering::Equal)
+                        =>
+                        ::std::option::Option::Some(::std::cmp::Ordering::Equal),
+                        cmp => cmp,
+                    },
+                },
+            }
+        }
+        #[inline]
+        fn lt(&self, other: &WithdrawReasons) -> bool {
+            match *other {
+                WithdrawReasons { mask: ref __self_1_0 } =>
+                match *self {
+                    WithdrawReasons { mask: ref __self_0_0 } =>
+                    ::std::option::Option::unwrap_or(::std::cmp::PartialOrd::partial_cmp(&(*__self_0_0),
+                                                                                         &(*__self_1_0)),
+                                                     ::std::cmp::Ordering::Greater)
+                        == ::std::cmp::Ordering::Less,
+                },
+            }
+        }
+        #[inline]
+        fn le(&self, other: &WithdrawReasons) -> bool {
+            match *other {
+                WithdrawReasons { mask: ref __self_1_0 } =>
+                match *self {
+                    WithdrawReasons { mask: ref __self_0_0 } =>
+                    ::std::option::Option::unwrap_or(::std::cmp::PartialOrd::partial_cmp(&(*__self_0_0),
+                                                                                         &(*__self_1_0)),
+                                                     ::std::cmp::Ordering::Greater)
+                        != ::std::cmp::Ordering::Greater,
+                },
+            }
+        }
+        #[inline]
+        fn gt(&self, other: &WithdrawReasons) -> bool {
+            match *other {
+                WithdrawReasons { mask: ref __self_1_0 } =>
+                match *self {
+                    WithdrawReasons { mask: ref __self_0_0 } =>
+                    ::std::option::Option::unwrap_or(::std::cmp::PartialOrd::partial_cmp(&(*__self_0_0),
+                                                                                         &(*__self_1_0)),
+                                                     ::std::cmp::Ordering::Less)
+                        == ::std::cmp::Ordering::Greater,
+                },
+            }
+        }
+        #[inline]
+        fn ge(&self, other: &WithdrawReasons) -> bool {
+            match *other {
+                WithdrawReasons { mask: ref __self_1_0 } =>
+                match *self {
+                    WithdrawReasons { mask: ref __self_0_0 } =>
+                    ::std::option::Option::unwrap_or(::std::cmp::PartialOrd::partial_cmp(&(*__self_0_0),
+                                                                                         &(*__self_1_0)),
+                                                     ::std::cmp::Ordering::Less)
+                        != ::std::cmp::Ordering::Less,
+                },
+            }
+        }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::fmt::Debug for WithdrawReasons {
+        fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+            match *self {
+                WithdrawReasons { mask: ref __self_0_0 } => {
+                    let mut debug_trait_builder =
+                        f.debug_struct("WithdrawReasons");
+                    let _ =
+                        debug_trait_builder.field("mask", &&(*__self_0_0));
+                    debug_trait_builder.finish()
+                }
+            }
+        }
+    }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    #[allow(dead_code)]
+    impl ::std::hash::Hash for WithdrawReasons {
+        fn hash<__H: ::std::hash::Hasher>(&self, state: &mut __H) -> () {
+            match *self {
+                WithdrawReasons { mask: ref __self_0_0 } => {
+                    ::std::hash::Hash::hash(&(*__self_0_0), state)
+                }
+            }
+        }
+    }
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications)]
+    const _IMPL_ENCODE_FOR_WithdrawReasons: () =
+        {
+            #[allow(unknown_lints)]
+            #[allow(rust_2018_idioms)]
+            extern crate codec as _parity_codec;
+            impl _parity_codec::Encode for WithdrawReasons {
+                fn encode_to<EncOut: _parity_codec::Output>(&self,
+                                                            dest:
+                                                                &mut EncOut) {
+                    dest.push(&self.mask);
+                }
+            }
+        };
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications)]
+    const _IMPL_DECODE_FOR_WithdrawReasons: () =
+        {
+            #[allow(unknown_lints)]
+            #[allow(rust_2018_idioms)]
+            extern crate codec as _parity_codec;
+            impl _parity_codec::Decode for WithdrawReasons {
+                fn decode<DecIn: _parity_codec::Input>(input: &mut DecIn)
+                 -> Option<Self> {
+                    Some(WithdrawReasons{mask:
+                                             _parity_codec::Decode::decode(input)?,})
+                }
+            }
+        };
+    #[allow(dead_code)]
+    impl WithdrawReasons {
+        /// Create a new mask with all flags unset.
+        #[inline]
+        pub fn none() -> Self { WithdrawReasons{mask: 0,} }
+        /// Create a new mask with all flags set.
+        #[inline]
+        pub fn all() -> Self {
+            WithdrawReasons{mask:
+                                0b00000001 | 0b00000010 | 0b00000100 |
+                                    0b00001000,}
+        }
+        /// Set all `other` flags.
+        ///
+        /// `other` can be either a single flag or another mask.
+        #[inline]
+        pub fn set<T>(&mut self, other: T) where T: Into<WithdrawReasons> +
+         ::bitmask::__core::ops::Deref<Target = i8> {
+            self.mask |= *other;
+        }
+        /// Unset all `other` flags.
+        ///
+        /// `other` can be either a single flag or another mask.
+        #[inline]
+        pub fn unset<T>(&mut self, other: T) where T: Into<WithdrawReasons> +
+         ::bitmask::__core::ops::Deref<Target = i8> {
+            self.mask &= Self::all().mask ^ *other;
+        }
+        /// Toggle all `other` flags.
+        ///
+        /// `other` can be either a single flag or another mask.
+        #[inline]
+        pub fn toggle<T>(&mut self, other: T) where T: Into<WithdrawReasons> +
+         ::bitmask::__core::ops::Deref<Target = i8> {
+            self.mask ^= *other;
+        }
+        /// Check if the mask contains all of `other`'s flags.
+        ///
+        /// `other` can be either a single flag or another mask.
+        #[inline]
+        pub fn contains<T>(&self, other: T) -> bool where
+         T: Into<WithdrawReasons> + ::bitmask::__core::ops::Deref<Target =
+         i8> {
+            self.mask & *other == *other
+        }
+        /// Check if the mask has common flags with `other`.
+        ///
+        /// `other` can be either a single flag or another mask.
+        #[inline]
+        pub fn intersects<T>(&self, other: T) -> bool where
+         T: Into<WithdrawReasons> + ::bitmask::__core::ops::Deref<Target =
+         i8> {
+            self.mask & *other != 0
+        }
+        /// Check if all flags are set.
+        pub fn is_all(&self) -> bool { self.mask == Self::all().mask }
+        /// Check if all flags are unset.
+        pub fn is_none(&self) -> bool { self.mask == 0 }
+    }
+    impl ::bitmask::__core::convert::From<WithdrawReason> for WithdrawReasons
+     {
+        /// Create a mask from a single flag.
+        ///
+        /// When creating a mask from multiple flags or another mask just use the `clone` method
+        /// or the `copy` semantics.
+        #[inline]
+        fn from(flag: WithdrawReason) -> Self {
+            WithdrawReasons{mask: flag as i8,}
+        }
+    }
+    impl ::bitmask::__core::ops::Deref for WithdrawReasons {
+        type
+        Target
+        =
+        i8;
+        /// Deref to the internal type.
+        ///
+        /// Useful for FFI.
+        #[inline]
+        fn deref(&self) -> &i8 { &self.mask as &i8 }
+    }
+    impl ::bitmask::__core::ops::Deref for WithdrawReason {
+        type
+        Target
+        =
+        i8;
+        /// Deref to the internal type.
+        ///
+        /// Useful for FFI.
+        #[inline]
+        fn deref(&self) -> &i8 {
+            unsafe { ::bitmask::__core::mem::transmute(self) }
+        }
+    }
+    impl ::bitmask::__core::ops::BitOr<WithdrawReasons> for WithdrawReasons {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn bitor(self, other: WithdrawReasons) -> Self::Output {
+            WithdrawReasons{mask: *self | *other,}
+        }
+    }
+    impl ::bitmask::__core::ops::BitOr<WithdrawReason> for WithdrawReasons {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn bitor(self, other: WithdrawReason) -> Self::Output {
+            WithdrawReasons{mask: *self | *other,}
+        }
+    }
+    impl ::bitmask::__core::ops::BitOr<WithdrawReasons> for WithdrawReason {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn bitor(self, other: WithdrawReasons) -> Self::Output {
+            WithdrawReasons{mask: *self | *other,}
+        }
+    }
+    impl ::bitmask::__core::ops::BitOr<WithdrawReason> for WithdrawReason {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn bitor(self, other: WithdrawReason) -> Self::Output {
+            WithdrawReasons{mask: *self | *other,}
+        }
+    }
+    impl ::bitmask::__core::ops::BitAnd<WithdrawReasons> for WithdrawReasons {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn bitand(self, other: WithdrawReasons) -> Self::Output {
+            WithdrawReasons{mask: *self & *other,}
+        }
+    }
+    impl ::bitmask::__core::ops::BitAnd<WithdrawReason> for WithdrawReasons {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn bitand(self, other: WithdrawReason) -> Self::Output {
+            WithdrawReasons{mask: *self & *other,}
+        }
+    }
+    impl ::bitmask::__core::ops::BitAnd<WithdrawReasons> for WithdrawReason {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn bitand(self, other: WithdrawReasons) -> Self::Output {
+            WithdrawReasons{mask: *self & *other,}
+        }
+    }
+    impl ::bitmask::__core::ops::BitAnd<WithdrawReason> for WithdrawReason {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn bitand(self, other: WithdrawReason) -> Self::Output {
+            WithdrawReasons{mask: *self & *other,}
+        }
+    }
+    impl ::bitmask::__core::ops::BitXor<WithdrawReasons> for WithdrawReasons {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn bitxor(self, other: WithdrawReasons) -> Self::Output {
+            WithdrawReasons{mask: *self ^ *other,}
+        }
+    }
+    impl ::bitmask::__core::ops::BitXor<WithdrawReason> for WithdrawReasons {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn bitxor(self, other: WithdrawReason) -> Self::Output {
+            WithdrawReasons{mask: *self ^ *other,}
+        }
+    }
+    impl ::bitmask::__core::ops::BitXor<WithdrawReasons> for WithdrawReason {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn bitxor(self, other: WithdrawReasons) -> Self::Output {
+            WithdrawReasons{mask: *self ^ *other,}
+        }
+    }
+    impl ::bitmask::__core::ops::BitXor<WithdrawReason> for WithdrawReason {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn bitxor(self, other: WithdrawReason) -> Self::Output {
+            WithdrawReasons{mask: *self ^ *other,}
+        }
+    }
+    impl ::bitmask::__core::ops::BitOrAssign<WithdrawReasons> for
+     WithdrawReasons {
+        #[inline]
+        fn bitor_assign(&mut self, other: WithdrawReasons) {
+            self.mask |= *other
+        }
+    }
+    impl ::bitmask::__core::ops::BitOrAssign<WithdrawReason> for
+     WithdrawReasons {
+        #[inline]
+        fn bitor_assign(&mut self, other: WithdrawReason) {
+            self.mask |= *other
+        }
+    }
+    impl ::bitmask::__core::ops::BitAndAssign<WithdrawReasons> for
+     WithdrawReasons {
+        #[inline]
+        fn bitand_assign(&mut self, other: WithdrawReasons) {
+            self.mask &= *other
+        }
+    }
+    impl ::bitmask::__core::ops::BitAndAssign<WithdrawReason> for
+     WithdrawReasons {
+        #[inline]
+        fn bitand_assign(&mut self, other: WithdrawReason) {
+            self.mask &= *other
+        }
+    }
+    impl ::bitmask::__core::ops::BitXorAssign<WithdrawReasons> for
+     WithdrawReasons {
+        #[inline]
+        fn bitxor_assign(&mut self, other: WithdrawReasons) {
+            self.mask ^= *other
+        }
+    }
+    impl ::bitmask::__core::ops::BitXorAssign<WithdrawReason> for
+     WithdrawReasons {
+        #[inline]
+        fn bitxor_assign(&mut self, other: WithdrawReason) {
+            self.mask ^= *other
+        }
+    }
+    impl ::bitmask::__core::ops::Not for WithdrawReasons {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn not(self) -> Self::Output {
+            let all_flags = WithdrawReasons::all();
+            WithdrawReasons{mask: *all_flags ^ *self,}
+        }
+    }
+    impl ::bitmask::__core::ops::Not for WithdrawReason {
+        type
+        Output
+        =
+        WithdrawReasons;
+        #[inline]
+        fn not(self) -> Self::Output {
+            let all_flags = WithdrawReasons::all();
+            WithdrawReasons{mask: *all_flags ^ *self,}
+        }
+    }
+}
+pub use self::storage::{StorageList, StorageValue, StorageMap,
+                        EnumerableStorageMap, StorageDoubleMap};
+pub use self::hashable::Hashable;
+pub use self::dispatch::{Parameter, Dispatchable, Callable, IsSubType};
+pub use self::double_map::StorageDoubleMapWithHasher;
+pub use runtime_io::{print, storage_root};
+#[doc(inline)]
+pub use srml_support_procedural::decl_storage;
+/// Return Err of the expression: `return Err($expression);`.
+///
+/// Used as `fail!(expression)`.
+#[macro_export]
+macro_rules! fail(( $ y : expr ) => { { return Err ( $ y ) ; } });
+/// Evaluate `$x:expr` and if not true return `Err($y:expr)`.
+///
+/// Used as `ensure!(expression_to_ensure, expression_to_return_on_false)`.
+#[macro_export]
+macro_rules! ensure(( $ x : expr , $ y : expr ) => {
+                    { if ! $ x { $ crate :: fail ! ( $ y ) ; } } });
+/// Evaluate an expression, assert it returns an expected `Err` value and that
+/// runtime storage has not been mutated (i.e. expression is a no-operation).
+///
+/// Used as `assert_noop(expression_to_assert, expected_error_expression)`.
+#[macro_export]
+#[cfg(feature = "std")]
+macro_rules! assert_noop(( $ x : expr , $ y : expr ) => {
+                         let h = $ crate :: storage_root (  ) ; $ crate ::
+                         assert_err ! ( $ x , $ y ) ; assert_eq ! (
+                         h , $ crate :: storage_root (  ) ) ; });
+/// Panic if an expression doesn't evaluate to an `Err`.
+///
+/// Used as `assert_err!(expression_to_assert, expected_err_expression)`.
+/// Assert an expression returns an error specified.
+///
+/// Used as `assert_err!(expression_to_assert, expected_error_expression)`
+#[macro_export]
+#[cfg(feature = "std")]
+macro_rules! assert_err(( $ x : expr , $ y : expr ) => {
+                        assert_eq ! ( $ x , Err ( $ y ) ) ; });
+/// Panic if an expression doesn't evaluate to `Ok`.
+///
+/// Used as `assert_ok!(expression_to_assert, expected_ok_expression)`,
+/// or `assert_ok!(expression_to_assert)` which would assert against `Ok(())`.
+#[macro_export]
+#[cfg(feature = "std")]
+macro_rules! assert_ok(( $ x : expr ) => { assert_eq ! ( $ x , Ok ( (  ) ) ) ;
+                       } ; ( $ x : expr , $ y : expr ) => {
+                       assert_eq ! ( $ x , Ok ( $ y ) ) ; });
+/// Panic when the vectors are different, without taking the order into account.
+///
+/// # Examples
+///
+/// ```rust
+/// #[macro_use]
+/// # extern crate srml_support;
+/// # use srml_support::{assert_eq_uvec};
+/// # fn main() {
+/// assert_eq_uvec!(vec![1,2], vec![2,1]);
+/// # }
+/// ```
+///
+/// ```rust,should_panic
+/// #[macro_use]
+/// # extern crate srml_support;
+/// # use srml_support::{assert_eq_uvec};
+/// # fn main() {
+/// assert_eq_uvec!(vec![1,2,3], vec![2,1]);
+/// # }
+/// ```
+#[macro_export]
+#[cfg(feature = "std")]
+macro_rules! assert_eq_uvec(( $ x : expr , $ y : expr ) => {
+                            $ crate :: __assert_eq_uvec ! ( $ x , $ y ) ; $
+                            crate :: __assert_eq_uvec ! ( $ y , $ x ) ; });
+#[macro_export]
+#[doc(hidden)]
+#[cfg(feature = "std")]
+macro_rules! __assert_eq_uvec(( $ x : expr , $ y : expr ) => {
+                              $ x . iter (  ) . for_each (
+                              | e | {
+                              if ! $ y . contains ( e ) {
+                              panic ! (
+                              format ! (
+                              "vectors not equal: {:?} != {:?}" , $ x , $ y )
+                              ) ; } } ) ; });
+/// The void type - it cannot exist.
+#[structural_match]
+pub enum Void { }
+#[automatically_derived]
+#[allow(unused_qualifications)]
+impl ::std::clone::Clone for Void {
+    #[inline]
+    fn clone(&self) -> Void { unsafe { ::std::intrinsics::unreachable() } }
+}
+#[automatically_derived]
+#[allow(unused_qualifications)]
+impl ::std::cmp::Eq for Void {
+    #[inline]
+    #[doc(hidden)]
+    fn assert_receiver_is_total_eq(&self) -> () { { } }
+}
+#[automatically_derived]
+#[allow(unused_qualifications)]
+impl ::std::cmp::PartialEq for Void {
+    #[inline]
+    fn eq(&self, other: &Void) -> bool {
+        unsafe { ::std::intrinsics::unreachable() }
+    }
+}
+#[automatically_derived]
+#[allow(unused_qualifications)]
+impl ::std::fmt::Debug for Void {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        unsafe { ::std::intrinsics::unreachable() }
+    }
+}
+#[cfg(feature = "std")]
+#[doc(hidden)]
+pub use serde::{Serialize, Deserialize};
+/// Programatically create derivations for tuples of up to 19 elements. You provide a second macro
+/// which is called once per tuple size, along with a number of identifiers, one for each element
+/// of the tuple.
+#[macro_export]
+macro_rules! for_each_tuple(( $ m : ident ) => {
+                            for_each_tuple ! {
+                            @ IMPL $ m ! ! A , B , C , D , E , F , G , H , I ,
+                            J , K , L , M , N , O , P , Q , R , S , } } ; (
+                            @ IMPL $ m : ident ! ! ) => { $ m ! {  } } ; (
+                            @ IMPL $ m : ident ! ! $ h : ident , $ (
+                            $ t : ident , ) * ) => {
+                            $ m ! { $ h $ ( $ t ) * } for_each_tuple ! {
+                            @ IMPL $ m ! ! $ ( $ t , ) * } });
